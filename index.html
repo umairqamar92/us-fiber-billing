@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>US Fiber Net | Premium Billing System + Auto Google Sheets</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: linear-gradient(135deg, #0a2f44, #071a24); color: #fff; min-height: 100vh; padding: 20px; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding: 18px 28px; background: rgba(0,0,0,0.55); backdrop-filter: blur(12px); border-radius: 28px; border: 1px solid rgba(0,200,255,0.25); position: relative; z-index: 100; }
+        .header-center h1 { font-size: 2rem; background: linear-gradient(135deg, #00e0ff, #0099cc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .user-info { background: rgba(0,0,0,0.4); padding: 8px 18px; border-radius: 40px; font-size: 0.85rem; }
+        .menu-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 10px 24px; border-radius: 40px; cursor: pointer; position: relative; z-index: 101; }
+        .menu-btn:hover { background: #00aaff30; }
+        .dropdown-menu { position: absolute; top: 60px; right: 0; background: #0c1e2c; backdrop-filter: blur(20px); border-radius: 20px; padding: 12px 0; min-width: 220px; display: none; z-index: 9999; border: 1px solid #2c6e8f; box-shadow: 0 20px 35px rgba(0,0,0,0.6); }
+        .dropdown-menu.show { display: block; animation: fadeSlide 0.2s ease; }
+        @keyframes fadeSlide { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+        .dropdown-menu button { background: none; border: none; color: #eef5ff; padding: 12px 24px; width: 100%; text-align: left; cursor: pointer; font-size: 0.9rem; }
+        .dropdown-menu button:hover { background: #2a7faa80; padding-left: 32px; }
+        .main-content { display: flex; gap: 28px; flex-wrap: wrap; position: relative; z-index: 1; }
+        .left-section { flex: 1.2; min-width: 320px; display: flex; flex-direction: column; gap: 24px; }
+        .form-section, .customer-info-section, .stats-section { background: rgba(12,34,48,0.75); backdrop-filter: blur(8px); border-radius: 28px; padding: 24px; border: 1px solid #3a7b9a; }
+        .table-section { flex: 2.5; min-width: 700px; background: rgba(12,34,48,0.75); backdrop-filter: blur(8px); border-radius: 28px; padding: 24px; overflow-x: auto; }
+        h2 { margin-bottom: 20px; border-left: 5px solid #00e0ff; padding-left: 16px; color: #cceeff; font-size: 1.25rem; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.8rem; }
+        input, select { width: 100%; padding: 12px 16px; border: none; border-radius: 18px; background: #f4f9fe; font-size: 0.9rem; color: #0a2a36; }
+        input:focus { outline: none; box-shadow: 0 0 0 3px #00c8ff80; }
+        .button-group { display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap; }
+        button { background: linear-gradient(135deg, #0099cc, #006699); border: none; padding: 10px 22px; border-radius: 40px; color: white; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        button:hover { transform: translateY(-2px); filter: brightness(1.05); }
+        .edit-btn { background: linear-gradient(135deg, #ff9800, #f57c00); }
+        .delete-btn { background: linear-gradient(135deg, #e53935, #c62828); }
+        .whatsapp-btn { background: linear-gradient(135deg, #25D366, #128C7E); }
+        .sms-btn { background: linear-gradient(135deg, #2196F3, #0b5e9e); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #3e7b9a; }
+        th { background: #1e4a6e50; color: #b3e4ff; }
+        tr:hover { background: #2a6f8f40; }
+        .stat-card { background: rgba(0,0,0,0.35); padding: 14px; border-radius: 20px; text-align: center; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; color: #5dc9ff; }
+        .pending-value { color: #ffaa66; }
+        .received-value { color: #8effa0; }
+        .badge-next { background: #ff9800; color: #1e2a2f; padding: 2px 10px; border-radius: 30px; font-size: 0.7rem; font-weight: bold; }
+        .modal, .login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 100000; }
+        .login-form, .modal-content { background: linear-gradient(145deg, #102c3c, #08212e); padding: 40px; border-radius: 40px; width: 90%; max-width: 400px; border: 1px solid #00c8ff; }
+        .notification { position: fixed; bottom: 20px; right: 20px; background: #2e7d32; padding: 14px 28px; border-radius: 60px; transform: translateX(200%); transition: 0.3s; z-index: 100001; font-weight: 600; }
+        .notification.show { transform: translateX(0); }
+        .notification.error { background: #d32f2f; }
+        .floating-panel { background: #0c2a38; border-radius: 28px; padding: 20px; margin-bottom: 20px; border: 1px solid #00aaff; display: none; }
+        .floating-panel.active { display: block; }
+        .inline-flex-group { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+        .flex-grow { flex: 2; min-width: 180px; }
+        .stats-grid { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+        .stats-grid .stat-card { flex: 1; min-width: 140px; }
+        .sync-status { font-size: 0.7rem; margin-top: 5px; color: #8effa0; }
+        @media (max-width: 1000px) { .left-section, .table-section { min-width: 100%; } }
+    </style>
+</head>
+<body>
+<div class="login-screen" id="loginScreen">
+    <div class="login-form">
+        <h2 style="margin-bottom:20px; text-align:center;">US Fiber Net</h2>
+        <div class="form-group"><label>Username</label><input type="text" id="loginUsername" placeholder="Username"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="loginPassword" placeholder="Password"></div>
+        <button id="loginBtn" style="width:100%;">Login</button>
+        <button id="resetDefaultPasswordBtn" style="width:100%; margin-top:12px; background:#ff9800;">Reset Default Password</button>
+        <p id="loginMessage" style="color:#ffaa88; margin-top:12px; text-align:center; display:none;">Invalid credentials</p>
+    </div>
+</div>
+
+<div class="container" style="display:none;" id="mainContainer">
+    <header>
+        <div class="header-center"><h1>US Fiber Net</h1><p class="tagline">Smart Billing • Auto Google Sheets Sync</p></div>
+        <div style="display:flex; align-items:center; gap:15px; position:relative;">
+            <div class="user-info" id="userInfoDisplay"></div>
+            <div style="position:relative;">
+                <button class="menu-btn" id="menuBtn">☰ Menu ▼</button>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <button id="searchPanelBtn">🔍 Search Panel</button>
+                    <button id="filterPanelBtn">⚙️ Filter Panel</button>
+                    <button id="backupJsonBtn">📁 Backup (JSON)</button>
+                    <button id="restoreBtn">📂 Restore Data</button>
+                    <button id="reportBtn">📊 Monthly Report</button>
+                    <button id="setupSheetBtn">📎 Setup Google Sheets</button>
+                    <button id="userManagementBtn" style="display:none;">👥 User Management</button>
+                    <button id="changePasswordBtn">🔒 Change Password</button>
+                    <button id="allResetBtn">🔄 All Reset (Special)</button>
+                    <button id="logoutBtn">🚪 Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="notification" id="notification"></div>
+    <input type="file" id="restoreFile" accept=".json" style="display:none;">
+
+    <div id="searchPanel" class="floating-panel">
+        <h3>🔎 Search Customer</h3>
+        <div class="inline-flex-group">
+            <div class="flex-grow"><label>Search By</label><select id="searchField"><option value="name">Name</option><option value="phone">Phone Number</option></select></div>
+            <div class="flex-grow"><label>Value</label><input type="text" id="searchValue" placeholder="Enter name or phone"></div>
+            <div><button id="doSearchBtn">Search</button><button id="clearSearchBtn" style="background:#f44336;">Clear</button></div>
+        </div>
+    </div>
+
+    <!-- Improved Filter Panel with Conditional Options & Enter Key Support -->
+    <div id="filterPanel" class="floating-panel">
+        <h3>⚙️ Advanced Filter</h3>
+        <div class="inline-flex-group">
+            <div class="flex-grow">
+                <label>Filter By</label>
+                <select id="filterTypeSelect">
+                    <option value="pending">Pending Amount</option>
+                    <option value="received">Received Amount</option>
+                    <option value="agent">Agent (Received By)</option>
+                    <option value="day">Due Day</option>
+                </select>
+            </div>
+            <div class="flex-grow" id="filterValueContainer">
+                <label>Value</label>
+                <input type="text" id="filterValueInput" placeholder="e.g., >0, =0, or exact amount">
+            </div>
+            <div>
+                <label>&nbsp;</label>
+                <button id="doFilterBtn">Apply Filter</button>
+                <button id="clearFilterBtn" style="background:#f44336;">Clear All</button>
+            </div>
+        </div>
+        <div id="filterStatus" style="font-size:0.75rem; margin-top:10px; color:#ffaa66;"></div>
+    </div>
+
+    <div class="main-content">
+        <div class="left-section">
+            <div class="form-section">
+                <h2>Add/Edit Customer <span id="editingBadge" style="display:none; background:#00c8ff; padding:2px 12px; border-radius:40px; font-size:0.7rem;">EDIT MODE</span></h2>
+                <form id="dataForm">
+                    <div class="form-group"><label>Full Name *</label><input type="text" id="name" placeholder="Customer name" required></div>
+                    <div class="form-group"><label>Phone (WhatsApp/SMS)</label><input type="tel" id="phone" placeholder="+923001234567"></div>
+                    <div class="form-group"><label>Monthly Fees</label><input type="number" id="fees" step="0.01" placeholder="Amount" required></div>
+                    <div class="form-group"><label>Received Amount</label><input type="number" id="received" step="0.01" placeholder="Received" value=""></div>
+                    <div class="form-group"><label>Due Day</label><select id="day" required><option value="">Select</option><option>1</option><option>5</option><option>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option>31</option></select></div>
+                    <div class="button-group"><button type="submit" id="addBtn">Add Entry</button><button type="button" id="sendSmsBtn" class="sms-btn">SMS Receipt</button><button type="button" id="sendWhatsAppBtn" class="whatsapp-btn">WhatsApp Receipt</button></div>
+                    <div class="button-group" id="editActionGroup" style="display:none;"><button type="button" id="updateBtn">Update Changes</button><button type="button" id="cancelBtn">Cancel Edit</button></div>
+                </form>
+            </div>
+            <div class="customer-info-section"><h2>👤 Customer Details</h2><div id="customerDetails" style="padding:18px; background:rgba(0,0,0,0.3); border-radius:24px; min-height:160px;">Click Edit on any customer</div></div>
+            <div class="stats-section">
+                <h2>📊 Dashboard</h2>
+                <div class="stats-grid"><div class="stat-card"><div>Total Customers</div><div class="stat-value" id="totalCustomersCount">0</div></div><div class="stat-card"><div>Pending Cust</div><div class="stat-value pending-value" id="pendingCustomersCount">0</div></div><div class="stat-card"><div>Received Cust</div><div class="stat-value received-value" id="receivedCustomersCount">0</div></div><div class="stat-card"><div>Next Month</div><div class="stat-value" id="nextMonthCustomersCount">0</div></div></div>
+                <div class="stats-grid"><div class="stat-card"><div>Total Fees</div><div class="stat-value" id="totalFeesAmount">0</div></div><div class="stat-card"><div>Pending Fees</div><div class="stat-value pending-value" id="pendingFeesAmount">0</div></div><div class="stat-card"><div>Received Fees</div><div class="stat-value received-value" id="receivedFeesAmount">0</div></div><div class="stat-card"><div>Next Month Fees</div><div class="stat-value" id="nextMonthFeesAmount">0</div></div></div>
+                <div class="sync-status" id="syncStatus">🔄 Auto-sync to Google Sheets enabled</div>
+            </div>
+        </div>
+        <div class="table-section">
+            <div style="display:flex; justify-content:space-between; flex-wrap:wrap;"><h2>Customer Records</h2><div id="tableActionButtons" style="display:none; gap:8px;"><span id="selectionCountText" style="background:#0099cc40; padding:6px 16px; border-radius:30px;">0 selected</span><button id="tableDeleteBtn" class="delete-btn">Delete</button><button id="tableResetCustomerBtn" class="reset-customer-btn">Reset Payment</button><button id="tableNextMonthBtn" class="next-month-mark-btn">Next Month</button><button id="tableUnmarkNextMonthBtn" style="background:#ff9800;">Remove Mark</button></div></div>
+            <div class="select-all-container" style="margin-bottom:10px;"><input type="checkbox" id="selectAllCheckbox"><label> Select All</label></div>
+            <div style="overflow-x:auto;"><table id="dataTable"><thead><tr><th></th><th>Day</th><th>Name</th><th>Phone</th><th>Fees</th><th>Received</th><th>Pending</th><th>Receipt No.</th><th>Agent/Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="tableBody"></tbody></table></div>
+        </div>
+    </div>
+</div>
+
+<!-- Setup Google Sheets Modal -->
+<div class="modal" id="sheetModal" style="display:none;">
+    <div class="modal-content" style="max-width:500px;">
+        <h2>📎 Google Sheets Setup</h2>
+        <p style="margin-bottom:15px;">Follow these steps to enable auto-sync:</p>
+        <ol style="margin-left:20px; margin-bottom:20px;">
+            <li>Create a new Google Sheet</li>
+            <li>Click Extensions → Apps Script</li>
+            <li>Paste the script from below</li>
+            <li>Deploy as Web App (Anyone access)</li>
+            <li>Copy the URL and paste here</li>
+        </ol>
+        <div class="form-group"><label>Web App URL</label><input type="text" id="sheetWebAppUrl" placeholder="https://script.google.com/.../exec"></div>
+        <button id="saveSheetSettings">Save & Test</button>
+        <button id="closeSheetModal" style="background:#666; margin-top:10px;">Close</button>
+        <hr style="margin:15px 0;">
+        <details><summary>📋 Copy this Apps Script code</summary>
+        <pre style="background:#1e2a2f; padding:10px; border-radius:10px; font-size:11px; overflow-x:auto;">
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const data = JSON.parse(e.postData.contents);
+  if(sheet.getLastRow() === 0) {
+    sheet.appendRow(["Timestamp","Serial","Name","Phone","Fees","Received","Pending","Day","Receipt","Agent","Status"]);
+  }
+  data.forEach(c => {
+    sheet.appendRow([new Date().toISOString(),c.serial,c.name,c.phone,c.fees,c.received,c.pending,c.day,c.token,c.receivedBy,c.isNextMonthPending?"Next Month":"Current"]);
+  });
+  return ContentService.createTextOutput(JSON.stringify({status:"success"}));
+}
+function doGet() { return ContentService.createTextOutput("Server OK"); }
+        </pre>
+        </details>
+    </div>
+</div>
+
+<div class="modal" id="userModal" style="display:none;"><div class="modal-content"><h2>Users</h2><div class="form-group"><label>New Username</label><input id="newUsername"></div><div class="form-group"><label>Password</label><input type="password" id="newUserPassword"></div><button id="createUserBtn">Create</button><h3>Existing</h3><div id="userListContainer"></div><button id="closeUserModalBtn">Close</button></div></div>
+<div class="modal" id="passwordModal" style="display:none;"><div class="modal-content"><h2>Change Password</h2><div class="form-group"><label>Current</label><input type="password" id="currentPassword"></div><div class="form-group"><label>New</label><input type="password" id="newPassword"></div><div class="form-group"><label>Confirm</label><input type="password" id="confirmPassword"></div><button id="savePasswordBtn">Save</button><button id="cancelPasswordBtn">Cancel</button></div></div>
+
+<script>
+    let data = [], editingIndex = -1, editingCustomerSerial = null, selectedRowsSet = new Set(), currentUser = null, users = [];
+    let activeSearch = { field: "", value: "" };
+    let activeFilter = { type: "", value: "" };
+    let googleSheetUrl = localStorage.getItem("googleSheetUrl") || "";
+    const STORAGE_KEY = "usFiberNetV10", USERS_KEY = "usFiberNetUsers";
+    
+    // Dynamic filter UI - changes based on filter type selection
+    function updateFilterUI() {
+        const filterType = document.getElementById('filterTypeSelect').value;
+        const container = document.getElementById('filterValueContainer');
+        const agents = [...new Set(data.map(c => c.receivedBy).filter(a => a && a.trim()))];
+        const days = [1,5,10,15,20,25,30,31];
+        
+        if (filterType === 'agent') {
+            container.innerHTML = `<label>Select Agent</label><select id="filterValueSelect"><option value="">All Agents</option>${agents.map(a => `<option value="${a}">${a}</option>`).join('')}</select>`;
+            // Add Enter key support for select
+            const selectEl = document.getElementById('filterValueSelect');
+            if (selectEl) {
+                selectEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') applyFilter(); });
+            }
+        } else if (filterType === 'day') {
+            container.innerHTML = `<label>Select Due Day</label><select id="filterValueSelect"><option value="">All Days</option>${days.map(d => `<option value="${d}">${d}</option>`).join('')}</select>`;
+            const selectEl = document.getElementById('filterValueSelect');
+            if (selectEl) {
+                selectEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') applyFilter(); });
+            }
+        } else {
+            container.innerHTML = `<label>Value (e.g., >0, =0, or exact amount)</label><input type="text" id="filterValueInput" placeholder=">0, =0, or number">`;
+            const inputEl = document.getElementById('filterValueInput');
+            if (inputEl) {
+                inputEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') applyFilter(); });
+            }
+        }
+    }
+    
+    function getFilterValue() {
+        const filterType = document.getElementById('filterTypeSelect').value;
+        if (filterType === 'agent' || filterType === 'day') {
+            const select = document.getElementById('filterValueSelect');
+            return select ? select.value : "";
+        }
+        const input = document.getElementById('filterValueInput');
+        return input ? input.value : "";
+    }
+    
+    // Main apply filter function (can be called from button or Enter key)
+    function applyFilter() {
+        const filterType = document.getElementById('filterTypeSelect').value;
+        const filterValue = getFilterValue();
+        if (!filterValue || filterValue === "") {
+            showNotification("Please select/enter a value to filter", true);
+            return;
+        }
+        activeFilter = { type: filterType, value: filterValue };
+        refreshTable();
+        showNotification(`Filter applied: ${filterType} = ${filterValue}`);
+    }
+    
+    function applyFiltersToData(filteredData) {
+        if (!activeFilter.type || !activeFilter.value || activeFilter.value === "") return filteredData;
+        
+        const val = activeFilter.value.trim();
+        return filteredData.filter(c => {
+            if (activeFilter.type === 'pending') {
+                if (val === ">0") return c.pending > 0;
+                if (val === "=0") return c.pending === 0;
+                const num = parseFloat(val);
+                if (!isNaN(num)) return c.pending === num;
+                return false;
+            }
+            if (activeFilter.type === 'received') {
+                if (val === ">0") return c.received > 0;
+                if (val === "=0") return c.received === 0;
+                const num = parseFloat(val);
+                if (!isNaN(num)) return c.received === num;
+                return false;
+            }
+            if (activeFilter.type === 'agent') {
+                return (c.receivedBy || "") === val;
+            }
+            if (activeFilter.type === 'day') {
+                return c.day === val;
+            }
+            return true;
+        });
+    }
+    
+    function applySearchFilter(rawData) {
+        if (activeSearch.field && activeSearch.value.trim() !== "") {
+            const val = activeSearch.value.toLowerCase().trim();
+            return rawData.filter(c => {
+                if (activeSearch.field === "name") return c.name.toLowerCase().includes(val);
+                if (activeSearch.field === "phone") return (c.phone || "").toLowerCase().includes(val);
+                return true;
+            });
+        }
+        return rawData;
+    }
+    
+    function refreshTable() {
+        const tbody = document.getElementById('tableBody');
+        if (!tbody) return;
+        tbody.innerHTML = "";
+        let filtered = applySearchFilter([...data]);
+        filtered = applyFiltersToData(filtered);
+        
+        if (filtered.length === 0) {
+            const row = tbody.insertRow();
+            const cell = row.insertCell(0);
+            cell.colSpan = 11;
+            cell.innerHTML = '🔍 No records found matching your criteria';
+            cell.style.textAlign = 'center';
+            cell.style.padding = '40px';
+            return;
+        }
+        
+        filtered.forEach(entry => {
+            const row = tbody.insertRow();
+            if (editingCustomerSerial === entry.serial) row.classList.add('selected');
+            const chkCell = row.insertCell(0);
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.className = 'row-selector';
+            cb.dataset.serial = entry.serial;
+            cb.checked = selectedRowsSet.has(entry.serial);
+            cb.addEventListener('change', () => {
+                if (cb.checked) selectedRowsSet.add(entry.serial);
+                else selectedRowsSet.delete(entry.serial);
+                updateSelectedStats();
+            });
+            chkCell.appendChild(cb);
+            row.insertCell(1).innerText = entry.day;
+            row.insertCell(2).innerText = entry.name;
+            row.insertCell(3).innerText = entry.phone || 'N/A';
+            row.insertCell(4).innerText = formatAmount(entry.fees);
+            row.insertCell(5).innerText = formatAmount(entry.received);
+            row.insertCell(6).innerHTML = '<span style="color:' + (entry.pending > 0 ? '#ffaa77' : '#8effa0') + '">' + formatAmount(entry.pending) + '</span>';
+            row.insertCell(7).innerHTML = entry.token ? entry.token : '<span style="color:#ffaa66;">No Receipt</span>';
+            const agentDate = entry.receivedBy ? entry.receivedBy + '<br/><small>' + (entry.lastUpdated?.split(',')[0] || '') + '</small>' : '—';
+            row.insertCell(8).innerHTML = '<small>' + agentDate + '</small>';
+            row.insertCell(9).innerHTML = entry.isNextMonthPending ? '<span class="badge-next">Next Month</span>' : '<span>Current</span>';
+            const actionCell = row.insertCell(10);
+            const editBtn = document.createElement('button');
+            editBtn.innerText = 'Edit';
+            editBtn.className = 'edit-btn';
+            editBtn.style.padding = '5px 12px';
+            editBtn.onclick = () => {
+                const idx = data.findIndex(d => d.serial === entry.serial);
+                if (idx !== -1) {
+                    const eData = data[idx];
+                    document.getElementById('name').value = eData.name;
+                    document.getElementById('phone').value = eData.phone || '';
+                    document.getElementById('fees').value = eData.fees;
+                    document.getElementById('received').value = eData.received === 0 ? '' : eData.received;
+                    document.getElementById('day').value = eData.day;
+                    editingIndex = idx;
+                    editingCustomerSerial = entry.serial;
+                    document.getElementById('addBtn').style.display = 'none';
+                    document.getElementById('editActionGroup').style.display = 'flex';
+                    document.getElementById('editingBadge').style.display = 'inline-block';
+                    document.getElementById('customerDetails').innerHTML = `<div><strong>${eData.name}</strong><br/>📞 Phone: ${eData.phone || 'N/A'}<br/>💰 Fees: ${formatAmount(eData.fees)}<br/>💵 Received: ${formatAmount(eData.received)}<br/>📌 Pending: ${formatAmount(eData.pending)}<br/>📅 Due Day: ${eData.day}<br/>🧾 Receipt: ${eData.token || 'None'}<br/>👤 Agent: ${eData.receivedBy || '-'}<br/>📆 Last: ${eData.lastUpdated || '-'}<br/>${eData.isNextMonthPending ? '⏩ Next Month Pending' : '✅ Current'}</div>`;
+                    refreshTable();
+                    setTimeout(() => document.getElementById('received').focus(), 100);
+                    showNotification('Editing ' + eData.name);
+                }
+            };
+            actionCell.appendChild(editBtn);
+        });
+        updateSelectedStats();
+        updateDashboard();
+        populateAgentFilter();
+        
+        // Update filter status display
+        const statusDiv = document.getElementById('filterStatus');
+        if (activeFilter.type && activeFilter.value) {
+            let filterText = '';
+            if (activeFilter.type === 'pending') filterText = `Pending: ${activeFilter.value}`;
+            else if (activeFilter.type === 'received') filterText = `Received: ${activeFilter.value}`;
+            else if (activeFilter.type === 'agent') filterText = `Agent: ${activeFilter.value}`;
+            else if (activeFilter.type === 'day') filterText = `Due Day: ${activeFilter.value}`;
+            statusDiv.innerHTML = `🔍 Active filter: ${filterText} | Showing ${filtered.length} of ${data.length} records`;
+        } else {
+            statusDiv.innerHTML = '';
+        }
+    }
+    
+    function updateDashboard() {
+        const all = data;
+        document.getElementById('totalCustomersCount').innerText = all.length;
+        document.getElementById('pendingCustomersCount').innerText = all.filter(c => c.pending > 0 && !c.isNextMonthPending).length;
+        document.getElementById('receivedCustomersCount').innerText = all.filter(c => c.received > 0 && !c.isNextMonthPending).length;
+        document.getElementById('nextMonthCustomersCount').innerText = all.filter(c => c.isNextMonthPending).length;
+        document.getElementById('totalFeesAmount').innerText = formatAmount(all.reduce((s, c) => s + c.fees, 0));
+        document.getElementById('pendingFeesAmount').innerText = formatAmount(all.filter(c => !c.isNextMonthPending).reduce((s, c) => s + c.pending, 0));
+        document.getElementById('receivedFeesAmount').innerText = formatAmount(all.filter(c => !c.isNextMonthPending).reduce((s, c) => s + c.received, 0));
+        document.getElementById('nextMonthFeesAmount').innerText = formatAmount(all.filter(c => c.isNextMonthPending).reduce((s, c) => s + c.fees, 0));
+        
+        const url = localStorage.getItem("googleSheetUrl");
+        if (url && url !== "") {
+            document.getElementById('syncStatus').innerHTML = '✅ Auto-sync to Google Sheets active';
+        } else {
+            document.getElementById('syncStatus').innerHTML = '⚠️ Google Sheets not configured. Click "Setup Google Sheets" in menu.';
+        }
+    }
+    
+    function updateSelectedStats() {
+        document.getElementById('selectionCountText').innerText = selectedRowsSet.size + ' selected';
+        document.getElementById('tableActionButtons').style.display = selectedRowsSet.size > 0 ? "flex" : "none";
+        document.getElementById('selectAllCheckbox').checked = (selectedRowsSet.size === data.length && data.length > 0);
+    }
+    
+    function showNotification(msg, isError = false) {
+        const n = document.getElementById('notification');
+        n.textContent = msg;
+        n.classList.add('show');
+        if (isError) n.classList.add('error');
+        else n.classList.remove('error');
+        setTimeout(() => n.classList.remove('show'), 3500);
+    }
+    
+    function saveToLocalStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); autoSyncToGoogleSheet(); }
+    function saveUsers() { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+    function loadUsers() { const saved = localStorage.getItem(USERS_KEY); if (saved) users = JSON.parse(saved); else users = [{ username: "admin", password: "admin123", isAdmin: true }]; saveUsers(); }
+    function generateReceiptNumber() { return "USF-" + new Date().getFullYear() + String(Math.floor(Math.random() * 9999)).padStart(4, '0'); }
+    function formatAmount(amt) { return amt.toFixed(2); }
+    
+    async function autoSyncToGoogleSheet() {
+        const url = localStorage.getItem("googleSheetUrl");
+        if (!url || url === "") return;
+        if (!data.length) return;
+        try {
+            await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        } catch (err) { console.error("Sync error:", err); }
+    }
+    
+    async function testGoogleSheet() {
+        const url = document.getElementById('sheetWebAppUrl').value;
+        if (!url) { showNotification("Enter Web App URL", true); return false; }
+        localStorage.setItem("googleSheetUrl", url);
+        googleSheetUrl = url;
+        showNotification("Settings saved! Data will auto-sync on every change.");
+        await autoSyncToGoogleSheet();
+        return true;
+    }
+    
+    function addNewEntry() {
+        const name = document.getElementById('name').value.trim();
+        if (!name) return showNotification("Name required", true);
+        const phone = document.getElementById('phone').value;
+        const fees = parseFloat(document.getElementById('fees').value) || 0;
+        let receivedVal = document.getElementById('received').value;
+        const received = (receivedVal === '' || receivedVal === null) ? 0 : parseFloat(receivedVal) || 0;
+        const day = document.getElementById('day').value;
+        if (!day) return showNotification("Due day", true);
+        const pending = fees - received;
+        const newSerial = data.length > 0 ? Math.max(...data.map(d => d.serial)) + 1 : 1;
+        data.push({ serial: newSerial, name, phone, fees, received, pending, day, token: "", isNextMonthPending: false, receivedBy: currentUser?.username || "unknown", lastUpdated: new Date().toLocaleString() });
+        saveToLocalStorage();
+        refreshTable();
+        showNotification("Customer added");
+        document.getElementById('dataForm').reset();
+        document.getElementById('received').value = '';
+    }
+    
+    function updateEntryFromEdit() {
+        if (editingIndex === -1) return;
+        const name = document.getElementById('name').value.trim();
+        const phone = document.getElementById('phone').value;
+        const fees = parseFloat(document.getElementById('fees').value) || 0;
+        let receivedVal = document.getElementById('received').value;
+        const received = (receivedVal === '' || receivedVal === null) ? 0 : parseFloat(receivedVal) || 0;
+        const day = document.getElementById('day').value;
+        if (!name || !day) return;
+        const pending = fees - received;
+        data[editingIndex] = { ...data[editingIndex], name, phone, fees, received, pending, day, lastUpdated: new Date().toLocaleString(), receivedBy: currentUser?.username };
+        saveToLocalStorage();
+        cancelEditMode();
+        refreshTable();
+        showNotification("Updated");
+    }
+    
+    function cancelEditMode() {
+        editingIndex = -1;
+        editingCustomerSerial = null;
+        document.getElementById('addBtn').style.display = 'block';
+        document.getElementById('editActionGroup').style.display = 'none';
+        document.getElementById('editingBadge').style.display = 'none';
+        document.getElementById('dataForm').reset();
+        document.getElementById('received').value = '';
+        document.getElementById('customerDetails').innerHTML = '<p>Click Edit on any customer</p>';
+        refreshTable();
+    }
+    
+    function deleteSelectedRows() {
+        if (selectedRowsSet.size === 0) return;
+        if (confirm("Delete " + selectedRowsSet.size + " customers?")) {
+            data = data.filter(d => !selectedRowsSet.has(d.serial));
+            if (editingCustomerSerial && selectedRowsSet.has(editingCustomerSerial)) cancelEditMode();
+            selectedRowsSet.clear();
+            saveToLocalStorage();
+            refreshTable();
+            showNotification("Deleted");
+        }
+    }
+    
+    function markSelectedAsNextMonth() {
+        if (selectedRowsSet.size === 0) return;
+        Array.from(selectedRowsSet).forEach(s => {
+            const idx = data.findIndex(d => d.serial === s);
+            if (idx !== -1) data[idx].isNextMonthPending = true;
+        });
+        selectedRowsSet.clear();
+        saveToLocalStorage();
+        refreshTable();
+        showNotification("Marked Next Month");
+    }
+    
+    function unmarkSelectedFromNextMonth() {
+        if (selectedRowsSet.size === 0) return;
+        Array.from(selectedRowsSet).forEach(s => {
+            const idx = data.findIndex(d => d.serial === s);
+            if (idx !== -1) data[idx].isNextMonthPending = false;
+        });
+        selectedRowsSet.clear();
+        saveToLocalStorage();
+        refreshTable();
+        showNotification("Unmarked");
+    }
+    
+    function resetCustomerSelected() {
+        if (selectedRowsSet.size === 0) return;
+        if (confirm("Reset payment for " + selectedRowsSet.size + " customers?")) {
+            selectedRowsSet.forEach(serial => {
+                const idx = data.findIndex(d => d.serial === serial);
+                if (idx !== -1) {
+                    data[idx].token = "";
+                    data[idx].received = 0;
+                    data[idx].pending = data[idx].fees;
+                    data[idx].receivedBy = "";
+                    data[idx].lastUpdated = "";
+                }
+            });
+            saveToLocalStorage();
+            refreshTable();
+            selectedRowsSet.clear();
+            showNotification("Reset completed");
+        }
+    }
+    
+    function allResetSpecial() {
+        if (confirm("⚠️ ALL RESET SPECIAL:\n- Next Month customers: Their pending amount will DOUBLE (fees×2)\n- Then ALL customers become CURRENT\n- All receipts and payments cleared.\nProceed?")) {
+            data.forEach(c => {
+                if (c.isNextMonthPending) { c.pending = c.fees * 2; } else { c.pending = c.fees; }
+                c.received = 0;
+                c.token = "";
+                c.receivedBy = "";
+                c.lastUpdated = "";
+                c.isNextMonthPending = false;
+            });
+            saveToLocalStorage();
+            refreshTable();
+            showNotification("Special reset completed");
+        }
+    }
+    
+    function generateReceiptForEdit() {
+        if (editingIndex === -1) { showNotification("Edit a customer first", true); return null; }
+        const cust = data[editingIndex];
+        if (!cust.token || cust.token === "") { cust.token = generateReceiptNumber(); saveToLocalStorage(); refreshTable(); }
+        return cust;
+    }
+    
+    function handleSMS() {
+        const cust = generateReceiptForEdit();
+        if (cust && cust.phone) {
+            const msg = `US FIBER NET\nReceipt: ${cust.token}\nPaid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`;
+            window.location.href = `sms:${cust.phone}?body=${encodeURIComponent(msg)}`;
+            showNotification("SMS opened");
+        } else showNotification("Phone missing or edit a customer", true);
+    }
+    
+    function handleWhatsApp() {
+        const cust = generateReceiptForEdit();
+        if (cust && cust.phone) {
+            const msg = `⚡ US FIBER NET ⚡\nReceipt No: ${cust.token}\nAmount Paid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`;
+            const phone = cust.phone.replace(/[^0-9+]/g, '').replace('+', '');
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+            showNotification("WhatsApp opened");
+        } else showNotification("Phone missing or edit a customer", true);
+    }
+    
+    function populateAgentFilter() {
+        const agentSet = new Set();
+        data.forEach(c => { if (c.receivedBy && c.receivedBy.trim()) agentSet.add(c.receivedBy); });
+        updateFilterUI();
+    }
+    
+    function backupJSON() {
+        const backup = { data, users, backupDate: new Date().toISOString() };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `US_Fiber_Backup_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+        a.click();
+        showNotification("Backup saved");
+    }
+    
+    function restoreData(file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const j = JSON.parse(e.target.result);
+                if (j.data) {
+                    data = j.data;
+                    if (j.users) { users = j.users; saveUsers(); }
+                    data.forEach(d => {
+                        if (d.isNextMonthPending === undefined) d.isNextMonthPending = false;
+                        if (!d.token) d.token = "";
+                        if (!d.receivedBy) d.receivedBy = "";
+                        if (!d.lastUpdated) d.lastUpdated = "";
+                        if (d.pending === undefined) d.pending = d.fees - d.received;
+                    });
+                    saveToLocalStorage();
+                    refreshTable();
+                    showNotification("Restored");
+                }
+            } catch (err) { showNotification("Invalid file", true); }
+        };
+        reader.readAsText(file);
+    }
+    
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            data = JSON.parse(saved);
+            data.forEach(d => {
+                if (d.isNextMonthPending === undefined) d.isNextMonthPending = false;
+                if (!d.token) d.token = "";
+                if (!d.receivedBy) d.receivedBy = "";
+                if (!d.lastUpdated) d.lastUpdated = "";
+                if (d.pending === undefined) d.pending = d.fees - d.received;
+            });
+        } else {
+            data = [];
+        }
+        refreshTable();
+    }
+    
+    // Event bindings
+    document.getElementById('dataForm').addEventListener('submit', (e) => { e.preventDefault(); if (editingIndex === -1) addNewEntry(); else updateEntryFromEdit(); });
+    document.getElementById('updateBtn').onclick = updateEntryFromEdit;
+    document.getElementById('cancelBtn').onclick = cancelEditMode;
+    document.getElementById('sendSmsBtn').onclick = handleSMS;
+    document.getElementById('sendWhatsAppBtn').onclick = handleWhatsApp;
+    document.getElementById('tableDeleteBtn').onclick = deleteSelectedRows;
+    document.getElementById('tableResetCustomerBtn').onclick = resetCustomerSelected;
+    document.getElementById('tableNextMonthBtn').onclick = markSelectedAsNextMonth;
+    document.getElementById('tableUnmarkNextMonthBtn').onclick = unmarkSelectedFromNextMonth;
+    document.getElementById('selectAllCheckbox').addEventListener('change', (e) => {
+        document.querySelectorAll('.row-selector').forEach(cb => {
+            cb.checked = e.target.checked;
+            const s = parseInt(cb.dataset.serial);
+            if (e.target.checked) selectedRowsSet.add(s);
+            else selectedRowsSet.delete(s);
+        });
+        updateSelectedStats();
+    });
+    document.getElementById('backupJsonBtn').onclick = backupJSON;
+    document.getElementById('restoreBtn').onclick = () => document.getElementById('restoreFile').click();
+    document.getElementById('restoreFile').onchange = e => { if (e.target.files.length) restoreData(e.target.files[0]); };
+    document.getElementById('reportBtn').onclick = () => {
+        let csv = "Name,Phone,Fees,Received,Pending,Day,Status\n" + data.map(c => `${c.name},${c.phone},${c.fees},${c.received},${c.pending},${c.day},${c.isNextMonthPending ? "Next" : "Current"}`).join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = "report.csv";
+        a.click();
+    };
+    document.getElementById('allResetBtn').onclick = allResetSpecial;
+    document.getElementById('resetDefaultPasswordBtn').onclick = () => {
+        const admin = users.find(u => u.username === 'admin');
+        if (admin) admin.password = "admin123";
+        saveUsers();
+        showNotification("Admin password reset to admin123");
+    };
+    
+    // Search
+    document.getElementById('doSearchBtn').onclick = () => {
+        activeSearch.field = document.getElementById('searchField').value;
+        activeSearch.value = document.getElementById('searchValue').value;
+        refreshTable();
+    };
+    document.getElementById('clearSearchBtn').onclick = () => {
+        activeSearch = { field: "", value: "" };
+        document.getElementById('searchValue').value = "";
+        refreshTable();
+        showNotification("Search cleared");
+    };
+    document.getElementById('searchValue').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('doSearchBtn').click(); });
+    
+    // Filter - with dynamic UI update and Enter key support
+    document.getElementById('filterTypeSelect').addEventListener('change', () => {
+        updateFilterUI();
+        activeFilter = { type: "", value: "" };
+        refreshTable();
+    });
+    
+    document.getElementById('doFilterBtn').onclick = applyFilter;
+    
+    document.getElementById('clearFilterBtn').onclick = () => {
+        activeFilter = { type: "", value: "" };
+        document.getElementById('filterTypeSelect').value = "pending";
+        updateFilterUI();
+        refreshTable();
+        showNotification("All filters cleared");
+    };
+    
+    // Google Sheet Modal
+    document.getElementById('setupSheetBtn').onclick = () => {
+        document.getElementById('sheetWebAppUrl').value = localStorage.getItem("googleSheetUrl") || "";
+        document.getElementById('sheetModal').style.display = 'flex';
+        document.getElementById('dropdownMenu').classList.remove('show');
+    };
+    document.getElementById('saveSheetSettings').onclick = async () => { await testGoogleSheet(); document.getElementById('sheetModal').style.display = 'none'; };
+    document.getElementById('closeSheetModal').onclick = () => document.getElementById('sheetModal').style.display = 'none';
+    
+    // User Management
+    document.getElementById('userManagementBtn').onclick = () => {
+        if (!currentUser?.isAdmin) return;
+        const container = document.getElementById('userListContainer');
+        container.innerHTML = '';
+        users.forEach((u, idx) => {
+            const div = document.createElement('div');
+            if (u.username !== 'admin') div.innerHTML = `<span>${u.username}</span><button class="delete-user-btn" data-idx="${idx}">Delete</button>`;
+            else div.innerHTML = `<span>${u.username} (Admin)</span>`;
+            container.appendChild(div);
+        });
+        document.querySelectorAll('.delete-user-btn').forEach(btn => {
+            btn.onclick = () => {
+                const idx = parseInt(btn.dataset.idx);
+                if (users[idx].username !== 'admin') {
+                    users.splice(idx, 1);
+                    saveUsers();
+                    document.getElementById('userModal').style.display = 'none';
+                    populateAgentFilter();
+                    showNotification("User deleted");
+                }
+            };
+        });
+        document.getElementById('userModal').style.display = 'flex';
+    };
+    document.getElementById('createUserBtn').onclick = () => {
+        const un = document.getElementById('newUsername').value.trim();
+        const pw = document.getElementById('newUserPassword').value;
+        if (!un) return;
+        if (pw.length < 4) return;
+        if (users.find(u => u.username === un)) return;
+        users.push({ username: un, password: pw, isAdmin: false });
+        saveUsers();
+        document.getElementById('userModal').style.display = 'none';
+        populateAgentFilter();
+        showNotification("User created");
+    };
+    document.getElementById('closeUserModalBtn').onclick = () => document.getElementById('userModal').style.display = 'none';
+    document.getElementById('changePasswordBtn').onclick = () => document.getElementById('passwordModal').style.display = 'flex';
+    document.getElementById('savePasswordBtn').onclick = () => {
+        const curr = document.getElementById('currentPassword').value;
+        const newp = document.getElementById('newPassword').value;
+        const conf = document.getElementById('confirmPassword').value;
+        if (curr !== currentUser.password) return showNotification("Wrong password", true);
+        if (newp !== conf) return;
+        currentUser.password = newp;
+        const idx = users.findIndex(u => u.username === currentUser.username);
+        if (idx !== -1) users[idx].password = newp;
+        saveUsers();
+        document.getElementById('passwordModal').style.display = 'none';
+        showNotification("Password changed");
+    };
+    document.getElementById('cancelPasswordBtn').onclick = () => document.getElementById('passwordModal').style.display = 'none';
+    document.getElementById('logoutBtn').onclick = () => {
+        sessionStorage.clear();
+        currentUser = null;
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('mainContainer').style.display = 'none';
+        cancelEditMode();
+    };
+    
+    function handleLogin() {
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const user = users.find(u => u.username === username && u.password === password);
+        if (user) {
+            currentUser = { ...user };
+            sessionStorage.setItem('usFiberLoggedIn', 'true');
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+            document.getElementById('userInfoDisplay').innerHTML = username + (user.isAdmin ? ' (Admin)' : '');
+            document.getElementById('userManagementBtn').style.display = user.isAdmin ? 'block' : 'none';
+            loadFromLocalStorage();
+            showNotification("Welcome " + username);
+        } else {
+            document.getElementById('loginMessage').style.display = 'block';
+        }
+    }
+    
+    document.getElementById('loginBtn').onclick = handleLogin;
+    document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
+    
+    const menuBtn = document.getElementById('menuBtn'), dropdown = document.getElementById('dropdownMenu');
+    menuBtn.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); };
+    window.onclick = (e) => { if (menuBtn && dropdown && !menuBtn.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('show'); };
+    
+    document.getElementById('searchPanelBtn').onclick = () => {
+        document.getElementById('searchPanel').classList.toggle('active');
+        document.getElementById('filterPanel').classList.remove('active');
+        dropdown.classList.remove('show');
+    };
+    document.getElementById('filterPanelBtn').onclick = () => {
+        document.getElementById('filterPanel').classList.toggle('active');
+        document.getElementById('searchPanel').classList.remove('active');
+        dropdown.classList.remove('show');
+        // Re-attach enter key listeners when panel opens
+        setTimeout(() => updateFilterUI(), 50);
+    };
+    
+    function checkAuth() {
+        loadUsers();
+        const logged = sessionStorage.getItem('usFiberLoggedIn') === 'true';
+        const saved = sessionStorage.getItem('currentUser');
+        if (logged && saved) {
+            currentUser = JSON.parse(saved);
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+            document.getElementById('userInfoDisplay').innerHTML = currentUser.username + (currentUser.isAdmin ? ' (Admin)' : '');
+            document.getElementById('userManagementBtn').style.display = currentUser.isAdmin ? 'block' : 'none';
+            loadFromLocalStorage();
+        } else {
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('mainContainer').style.display = 'none';
+        }
+    }
+    checkAuth();
+</script>
+</body>
+</html>
