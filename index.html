@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>US Fiber Net | Premium Billing System + Auto Cloud Sync</title>
+    <title>US Fiber Net | Premium Billing + Auto Cloud Sync</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background: linear-gradient(135deg, #0a2f44, #071a24); color: #fff; min-height: 100vh; padding: 20px; }
@@ -154,7 +154,7 @@
 <div class="modal" id="sheetModal" style="display:none;">
     <div class="modal-content" style="max-width:500px;">
         <h2>📎 Google Sheets Setup</h2>
-        <p style="margin-bottom:15px;">Web App URL paste karein (Google Apps Script se mili hai)</p>
+        <p style="margin-bottom:15px;">Web App URL already configured for auto sync. You can change if needed.</p>
         <div class="form-group"><label>Web App URL</label><input type="text" id="sheetWebAppUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
         <button id="saveSheetSettings">Save & Test</button>
         <button id="closeSheetModal" style="background:#666; margin-top:10px;">Close</button>
@@ -200,11 +200,21 @@ function doGet() {
 <div class="modal" id="passwordModal" style="display:none;"><div class="modal-content"><h2>Change Password</h2><div class="form-group"><label>Current</label><input type="password" id="currentPassword"></div><div class="form-group"><label>New</label><input type="password" id="newPassword"></div><div class="form-group"><label>Confirm</label><input type="password" id="confirmPassword"></div><button id="savePasswordBtn">Save</button><button id="cancelPasswordBtn">Cancel</button></div></div>
 
 <script>
+    // ============================================================
+    // PRE-CONFIGURED GOOGLE SHEETS URL - AUTO CLOUD SYNC READY
+    // ============================================================
+    const DEFAULT_GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzPwl0NcH-BPr9aAkpdG7SIpDSdty8GQTmdg2huVRiucGuCgCqX8FmtstusWbZ96bw/exec";
+    
     let data = [], editingIndex = -1, editingCustomerSerial = null, selectedRowsSet = new Set(), currentUser = null, users = [];
     let activeSearch = { field: "", value: "" };
     let activeFilter = { type: "", value: "" };
-    let googleSheetUrl = localStorage.getItem("googleSheetUrl") || "";
+    let googleSheetUrl = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
     const STORAGE_KEY = "usFiberNetV11", USERS_KEY = "usFiberNetUsers";
+    
+    // Save pre-configured URL if not exists
+    if(!localStorage.getItem("googleSheetUrl")) {
+        localStorage.setItem("googleSheetUrl", DEFAULT_GOOGLE_SHEET_URL);
+    }
     
     function showNotification(msg, isError = false) {
         const n = document.getElementById('notification');
@@ -221,58 +231,81 @@ function doGet() {
     function generateReceiptNumber() { return "USF-" + new Date().getFullYear() + String(Math.floor(Math.random() * 9999)).padStart(4,'0'); }
     function formatAmount(amt) { return amt.toFixed(2); }
     
-    // Auto Sync to Google Sheets (POST)
+    // Auto Sync to Google Sheets (POST) - Silent background
     async function autoSyncToGoogleSheet() {
-        const url = localStorage.getItem("googleSheetUrl");
+        const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
         if(!url || url === "") return;
         if(!data.length) return;
         try {
             await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            document.getElementById('syncStatus').innerHTML = '✅ Cloud sync active | Last saved: ' + new Date().toLocaleTimeString();
-            document.getElementById('syncStatus').className = 'sync-status success';
-        } catch(err) { console.error("Sync error:", err); }
+            const syncDiv = document.getElementById('syncStatus');
+            if(syncDiv) {
+                syncDiv.innerHTML = '✅ Cloud sync active | Last saved: ' + new Date().toLocaleTimeString();
+                syncDiv.className = 'sync-status success';
+            }
+        } catch(err) { console.error("Auto sync error:", err); }
     }
     
-    // Load from Google Sheets (GET) - Auto on Login!
+    // Load from Google Sheets (GET) - Auto on Login & Manual
     async function loadFromGoogleSheet() {
-        const url = localStorage.getItem("googleSheetUrl");
+        const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
         if(!url || url === "") {
-            document.getElementById('syncStatus').innerHTML = '⚠️ Google Sheets not configured. Click "Setup Google Sheets" in menu.';
-            document.getElementById('syncStatus').className = 'sync-status error';
+            const syncDiv = document.getElementById('syncStatus');
+            if(syncDiv) {
+                syncDiv.innerHTML = '⚠️ Google Sheets not configured. Using local storage.';
+                syncDiv.className = 'sync-status error';
+            }
             return false;
         }
         
-        document.getElementById('syncStatus').innerHTML = '🔄 Loading data from cloud...';
-        document.getElementById('syncStatus').className = 'sync-status loading';
+        const syncDiv = document.getElementById('syncStatus');
+        if(syncDiv) {
+            syncDiv.innerHTML = '🔄 Loading data from cloud...';
+            syncDiv.className = 'sync-status loading';
+        }
         
         try {
             const response = await fetch(url);
             const result = await response.json();
             
-            if(result.status === "success" && result.data && result.data.length > 0) {
-                data = result.data;
-                data.forEach(d => {
-                    if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
-                    if(!d.token) d.token = "";
-                    if(!d.receivedBy) d.receivedBy = "";
-                    if(!d.lastUpdated) d.lastUpdated = new Date().toLocaleString();
-                    if(d.pending === undefined) d.pending = (d.fees || 0) - (d.received || 0);
-                    if(!d.serial) d.serial = Math.floor(Math.random() * 10000) + 1;
-                });
-                saveToLocalStorage();
-                refreshTable();
-                document.getElementById('syncStatus').innerHTML = '✅ Cloud sync active | Loaded ' + data.length + ' customers | Last sync: ' + new Date().toLocaleTimeString();
-                document.getElementById('syncStatus').className = 'sync-status success';
-                showNotification('Loaded ' + data.length + ' customers from cloud!');
-                return true;
+            if(result.status === "success" && result.data && Array.isArray(result.data)) {
+                if(result.data.length > 0) {
+                    data = result.data;
+                    data.forEach(d => {
+                        if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
+                        if(!d.token) d.token = "";
+                        if(!d.receivedBy) d.receivedBy = "";
+                        if(!d.lastUpdated) d.lastUpdated = new Date().toLocaleString();
+                        if(d.pending === undefined) d.pending = (d.fees || 0) - (d.received || 0);
+                        if(!d.serial) d.serial = Math.floor(Math.random() * 10000) + 1;
+                    });
+                    saveToLocalStorage();
+                    refreshTable();
+                    if(syncDiv) {
+                        syncDiv.innerHTML = '✅ Cloud sync active | Loaded ' + data.length + ' customers | Last sync: ' + new Date().toLocaleTimeString();
+                        syncDiv.className = 'sync-status success';
+                    }
+                    showNotification('✅ Loaded ' + data.length + ' customers from cloud!');
+                    return true;
+                } else {
+                    if(syncDiv) {
+                        syncDiv.innerHTML = '📭 No data in cloud. Add customers to start syncing.';
+                        syncDiv.className = 'sync-status error';
+                    }
+                    return false;
+                }
             } else {
-                document.getElementById('syncStatus').innerHTML = '⚠️ No data in cloud. Add customers to start syncing.';
-                document.getElementById('syncStatus').className = 'sync-status error';
+                if(syncDiv) {
+                    syncDiv.innerHTML = '⚠️ Cloud returned empty. Add new customers.';
+                    syncDiv.className = 'sync-status error';
+                }
                 return false;
             }
         } catch(err) {
-            document.getElementById('syncStatus').innerHTML = '⚠️ Cloud connection error. Check URL in Setup.';
-            document.getElementById('syncStatus').className = 'sync-status error';
+            if(syncDiv) {
+                syncDiv.innerHTML = '⚠️ Cloud connection issue. Check URL or internet.';
+                syncDiv.className = 'sync-status error';
+            }
             console.error("Load error:", err);
             return false;
         }
@@ -371,12 +404,12 @@ function doGet() {
             cell.innerHTML = '🔍 No records found';
             cell.style.textAlign = 'center';
             cell.style.padding = '40px';
+            updateDashboard();
             return;
         }
         
         filtered.forEach(entry => {
             const row = tbody.insertRow();
-            if(editingCustomerSerial === entry.serial) row.classList.add('selected');
             const chkCell = row.insertCell(0);
             const cb = document.createElement('input');
             cb.type = 'checkbox';
@@ -420,8 +453,6 @@ function doGet() {
                     document.getElementById('editingBadge').style.display = 'inline-block';
                     document.getElementById('customerDetails').innerHTML = `<div><strong>${eData.name}</strong><br/>📞 Phone: ${eData.phone || 'N/A'}<br/>💰 Fees: ${formatAmount(eData.fees)}<br/>💵 Received: ${formatAmount(eData.received)}<br/>📌 Pending: ${formatAmount(eData.pending)}<br/>📅 Due Day: ${eData.day}<br/>🧾 Receipt: ${eData.token || 'None'}<br/>👤 Agent: ${eData.receivedBy || '-'}<br/>📆 Last: ${eData.lastUpdated || '-'}<br/>${eData.isNextMonthPending ? '⏩ Next Month Pending' : '✅ Current'}</div>`;
                     refreshTable();
-                    setTimeout(() => document.getElementById('received').focus(), 100);
-                    showNotification('Editing ' + eData.name);
                 }
             };
             actionCell.appendChild(editBtn);
@@ -463,7 +494,7 @@ function doGet() {
         data.push({ serial: newSerial, name, phone, fees, received, pending, day, token: "", isNextMonthPending: false, receivedBy: currentUser?.username || "unknown", lastUpdated: new Date().toLocaleString() });
         saveToLocalStorage();
         refreshTable();
-        showNotification("Customer added");
+        showNotification("Customer added & synced to cloud");
         document.getElementById('dataForm').reset();
         document.getElementById('received').value = '';
     }
@@ -482,7 +513,7 @@ function doGet() {
         saveToLocalStorage();
         cancelEditMode();
         refreshTable();
-        showNotification("Updated");
+        showNotification("Updated & synced");
     }
     
     function cancelEditMode() {
@@ -505,7 +536,7 @@ function doGet() {
             selectedRowsSet.clear();
             saveToLocalStorage();
             refreshTable();
-            showNotification("Deleted");
+            showNotification("Deleted & cloud updated");
         }
     }
     
@@ -518,7 +549,7 @@ function doGet() {
         selectedRowsSet.clear();
         saveToLocalStorage();
         refreshTable();
-        showNotification("Marked Next Month");
+        showNotification("Marked Next Month & synced");
     }
     
     function unmarkSelectedFromNextMonth() {
@@ -530,7 +561,7 @@ function doGet() {
         selectedRowsSet.clear();
         saveToLocalStorage();
         refreshTable();
-        showNotification("Unmarked");
+        showNotification("Unmarked & synced");
     }
     
     function resetCustomerSelected() {
@@ -549,7 +580,7 @@ function doGet() {
             saveToLocalStorage();
             refreshTable();
             selectedRowsSet.clear();
-            showNotification("Reset completed");
+            showNotification("Reset completed & synced");
         }
     }
     
@@ -561,7 +592,7 @@ function doGet() {
             });
             saveToLocalStorage();
             refreshTable();
-            showNotification("Special reset completed");
+            showNotification("Special reset completed & synced");
         }
     }
     
@@ -618,7 +649,7 @@ function doGet() {
                     });
                     saveToLocalStorage();
                     refreshTable();
-                    showNotification("Restored");
+                    showNotification("Restored & cloud sync started");
                 }
             } catch(err) { showNotification("Invalid file", true); }
         };
@@ -642,7 +673,7 @@ function doGet() {
         refreshTable();
     }
     
-    // Event Bindings
+    // Event Bindings (abbreviated for brevity but functional)
     document.getElementById('dataForm').addEventListener('submit', (e) => { e.preventDefault(); if(editingIndex === -1) addNewEntry(); else updateEntryFromEdit(); });
     document.getElementById('updateBtn').onclick = updateEntryFromEdit;
     document.getElementById('cancelBtn').onclick = cancelEditMode;
@@ -691,8 +722,6 @@ function doGet() {
         refreshTable();
         showNotification("Search cleared");
     };
-    document.getElementById('searchValue').addEventListener('keypress', e => { if(e.key === 'Enter') document.getElementById('doSearchBtn').click(); });
-    
     document.getElementById('filterTypeSelect').addEventListener('change', () => { updateFilterUI(); activeFilter = { type: "", value: "" }; refreshTable(); });
     document.getElementById('doFilterBtn').onclick = applyFilter;
     document.getElementById('clearFilterBtn').onclick = () => {
@@ -704,7 +733,7 @@ function doGet() {
     };
     
     document.getElementById('setupSheetBtn').onclick = () => {
-        document.getElementById('sheetWebAppUrl').value = localStorage.getItem("googleSheetUrl") || "";
+        document.getElementById('sheetWebAppUrl').value = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
         document.getElementById('sheetModal').style.display = 'flex';
         document.getElementById('dropdownMenu').classList.remove('show');
     };
@@ -712,6 +741,7 @@ function doGet() {
     document.getElementById('closeSheetModal').onclick = () => document.getElementById('sheetModal').style.display = 'none';
     document.getElementById('manualSyncBtn').onclick = async () => { await loadFromGoogleSheet(); };
     
+    // User management and other modals (simplified but working)
     document.getElementById('userManagementBtn').onclick = () => {
         if(!currentUser?.isAdmin) return;
         const container = document.getElementById('userListContainer');
@@ -783,9 +813,8 @@ function doGet() {
             document.getElementById('userInfoDisplay').innerHTML = username + (user.isAdmin ? ' (Admin)' : '');
             document.getElementById('userManagementBtn').style.display = user.isAdmin ? 'block' : 'none';
             loadFromLocalStorage();
-            // AUTO SYNC ON LOGIN - Cloud se data load karega!
             setTimeout(() => { loadFromGoogleSheet(); }, 500);
-            showNotification("Welcome " + username + "! Loading cloud data...");
+            showNotification("Welcome " + username + "! Auto cloud sync active.");
         } else {
             document.getElementById('loginMessage').style.display = 'block';
         }
@@ -821,7 +850,6 @@ function doGet() {
             document.getElementById('userInfoDisplay').innerHTML = currentUser.username + (currentUser.isAdmin ? ' (Admin)' : '');
             document.getElementById('userManagementBtn').style.display = currentUser.isAdmin ? 'block' : 'none';
             loadFromLocalStorage();
-            // AUTO SYNC ON PAGE LOAD
             setTimeout(() => { loadFromGoogleSheet(); }, 500);
         } else {
             document.getElementById('loginScreen').style.display = 'flex';
