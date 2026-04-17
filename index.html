@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>US Fiber Net | Premium Billing System + Auto Google Sheets</title>
+    <title>US Fiber Net | Premium Billing System + Auto Cloud Sync</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background: linear-gradient(135deg, #0a2f44, #071a24); color: #fff; min-height: 100vh; padding: 20px; }
@@ -54,7 +54,10 @@
         .flex-grow { flex: 2; min-width: 180px; }
         .stats-grid { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
         .stats-grid .stat-card { flex: 1; min-width: 140px; }
-        .sync-status { font-size: 0.7rem; margin-top: 5px; color: #8effa0; }
+        .sync-status { font-size: 0.75rem; margin-top: 10px; padding: 8px; border-radius: 20px; text-align: center; }
+        .sync-status.success { background: #2e7d3220; color: #8effa0; }
+        .sync-status.loading { background: #ff980020; color: #ffaa66; }
+        .sync-status.error { background: #d32f2f20; color: #ffaa88; }
         @media (max-width: 1000px) { .left-section, .table-section { min-width: 100%; } }
     </style>
 </head>
@@ -72,7 +75,7 @@
 
 <div class="container" style="display:none;" id="mainContainer">
     <header>
-        <div class="header-center"><h1>US Fiber Net</h1><p class="tagline">Smart Billing • Auto Google Sheets Sync</p></div>
+        <div class="header-center"><h1>US Fiber Net</h1><p class="tagline">Smart Billing • Auto Cloud Sync</p></div>
         <div style="display:flex; align-items:center; gap:15px; position:relative;">
             <div class="user-info" id="userInfoDisplay"></div>
             <div style="position:relative;">
@@ -84,6 +87,7 @@
                     <button id="restoreBtn">📂 Restore Data</button>
                     <button id="reportBtn">📊 Monthly Report</button>
                     <button id="setupSheetBtn">📎 Setup Google Sheets</button>
+                    <button id="manualSyncBtn">☁️ Manual Sync from Cloud</button>
                     <button id="userManagementBtn" style="display:none;">👥 User Management</button>
                     <button id="changePasswordBtn">🔒 Change Password</button>
                     <button id="allResetBtn">🔄 All Reset (Special)</button>
@@ -104,28 +108,15 @@
         </div>
     </div>
 
-    <!-- Improved Filter Panel with Conditional Options & Enter Key Support -->
     <div id="filterPanel" class="floating-panel">
         <h3>⚙️ Advanced Filter</h3>
         <div class="inline-flex-group">
-            <div class="flex-grow">
-                <label>Filter By</label>
-                <select id="filterTypeSelect">
-                    <option value="pending">Pending Amount</option>
-                    <option value="received">Received Amount</option>
-                    <option value="agent">Agent (Received By)</option>
-                    <option value="day">Due Day</option>
-                </select>
-            </div>
-            <div class="flex-grow" id="filterValueContainer">
-                <label>Value</label>
-                <input type="text" id="filterValueInput" placeholder="e.g., >0, =0, or exact amount">
-            </div>
-            <div>
-                <label>&nbsp;</label>
-                <button id="doFilterBtn">Apply Filter</button>
-                <button id="clearFilterBtn" style="background:#f44336;">Clear All</button>
-            </div>
+            <div class="flex-grow"><label>Filter By</label><select id="filterTypeSelect">
+                <option value="pending">Pending Amount</option><option value="received">Received Amount</option>
+                <option value="agent">Agent</option><option value="day">Due Day</option>
+            </select></div>
+            <div class="flex-grow" id="filterValueContainer"><label>Value</label><input type="text" id="filterValueInput" placeholder="e.g., >0, =0"></div>
+            <div><button id="doFilterBtn">Apply Filter</button><button id="clearFilterBtn" style="background:#f44336;">Clear</button></div>
         </div>
         <div id="filterStatus" style="font-size:0.75rem; margin-top:10px; color:#ffaa66;"></div>
     </div>
@@ -149,7 +140,7 @@
                 <h2>📊 Dashboard</h2>
                 <div class="stats-grid"><div class="stat-card"><div>Total Customers</div><div class="stat-value" id="totalCustomersCount">0</div></div><div class="stat-card"><div>Pending Cust</div><div class="stat-value pending-value" id="pendingCustomersCount">0</div></div><div class="stat-card"><div>Received Cust</div><div class="stat-value received-value" id="receivedCustomersCount">0</div></div><div class="stat-card"><div>Next Month</div><div class="stat-value" id="nextMonthCustomersCount">0</div></div></div>
                 <div class="stats-grid"><div class="stat-card"><div>Total Fees</div><div class="stat-value" id="totalFeesAmount">0</div></div><div class="stat-card"><div>Pending Fees</div><div class="stat-value pending-value" id="pendingFeesAmount">0</div></div><div class="stat-card"><div>Received Fees</div><div class="stat-value received-value" id="receivedFeesAmount">0</div></div><div class="stat-card"><div>Next Month Fees</div><div class="stat-value" id="nextMonthFeesAmount">0</div></div></div>
-                <div class="sync-status" id="syncStatus">🔄 Auto-sync to Google Sheets enabled</div>
+                <div id="syncStatus" class="sync-status">🔄 Checking cloud connection...</div>
             </div>
         </div>
         <div class="table-section">
@@ -160,36 +151,46 @@
     </div>
 </div>
 
-<!-- Setup Google Sheets Modal -->
 <div class="modal" id="sheetModal" style="display:none;">
     <div class="modal-content" style="max-width:500px;">
         <h2>📎 Google Sheets Setup</h2>
-        <p style="margin-bottom:15px;">Follow these steps to enable auto-sync:</p>
-        <ol style="margin-left:20px; margin-bottom:20px;">
-            <li>Create a new Google Sheet</li>
-            <li>Click Extensions → Apps Script</li>
-            <li>Paste the script from below</li>
-            <li>Deploy as Web App (Anyone access)</li>
-            <li>Copy the URL and paste here</li>
-        </ol>
-        <div class="form-group"><label>Web App URL</label><input type="text" id="sheetWebAppUrl" placeholder="https://script.google.com/.../exec"></div>
+        <p style="margin-bottom:15px;">Web App URL paste karein (Google Apps Script se mili hai)</p>
+        <div class="form-group"><label>Web App URL</label><input type="text" id="sheetWebAppUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
         <button id="saveSheetSettings">Save & Test</button>
         <button id="closeSheetModal" style="background:#666; margin-top:10px;">Close</button>
         <hr style="margin:15px 0;">
-        <details><summary>📋 Copy this Apps Script code</summary>
+        <details><summary>📋 Apps Script Code (Copy paste karein)</summary>
         <pre style="background:#1e2a2f; padding:10px; border-radius:10px; font-size:11px; overflow-x:auto;">
 function doPost(e) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   const data = JSON.parse(e.postData.contents);
   if(sheet.getLastRow() === 0) {
-    sheet.appendRow(["Timestamp","Serial","Name","Phone","Fees","Received","Pending","Day","Receipt","Agent","Status"]);
+    sheet.appendRow(["Timestamp","Serial","Name","Phone","Fees","Received","Pending","Day","Receipt","Agent","Status","LastUpdated"]);
   }
   data.forEach(c => {
-    sheet.appendRow([new Date().toISOString(),c.serial,c.name,c.phone,c.fees,c.received,c.pending,c.day,c.token,c.receivedBy,c.isNextMonthPending?"Next Month":"Current"]);
+    sheet.appendRow([new Date().toLocaleString(),c.serial,c.name,c.phone,c.fees,c.received,c.pending,c.day,c.token,c.receivedBy,c.isNextMonthPending?"Next Month":"Current",c.lastUpdated]);
   });
   return ContentService.createTextOutput(JSON.stringify({status:"success"}));
 }
-function doGet() { return ContentService.createTextOutput("Server OK"); }
+function doGet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const lastRow = sheet.getLastRow();
+  if(lastRow <= 1) return ContentService.createTextOutput(JSON.stringify({status:"empty",data:[]}));
+  const values = sheet.getRange(2,1,lastRow-1,12).getValues();
+  const customers = [];
+  for(let i=0;i<values.length;i++){
+    customers.push({serial:values[i][1],name:values[i][2],phone:values[i][3],fees:values[i][4],received:values[i][5],pending:values[i][6],day:values[i][7],token:values[i][8],receivedBy:values[i][9],isNextMonthPending:values[i][10]==="Next Month",lastUpdated:values[i][11]});
+  }
+  const unique = [];
+  const seen = new Set();
+  for(let i=customers.length-1;i>=0;i--){
+    if(!seen.has(customers[i].serial)){
+      seen.add(customers[i].serial);
+      unique.unshift(customers[i]);
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({status:"success",data:unique,count:unique.length}));
+}
         </pre>
         </details>
     </div>
@@ -203,40 +204,108 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     let activeSearch = { field: "", value: "" };
     let activeFilter = { type: "", value: "" };
     let googleSheetUrl = localStorage.getItem("googleSheetUrl") || "";
-    const STORAGE_KEY = "usFiberNetV10", USERS_KEY = "usFiberNetUsers";
+    const STORAGE_KEY = "usFiberNetV11", USERS_KEY = "usFiberNetUsers";
     
-    // Dynamic filter UI - changes based on filter type selection
+    function showNotification(msg, isError = false) {
+        const n = document.getElementById('notification');
+        n.textContent = msg;
+        n.classList.add('show');
+        if(isError) n.classList.add('error');
+        else n.classList.remove('error');
+        setTimeout(() => n.classList.remove('show'), 3500);
+    }
+    
+    function saveToLocalStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); autoSyncToGoogleSheet(); }
+    function saveUsers() { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+    function loadUsers() { const saved = localStorage.getItem(USERS_KEY); if(saved) users = JSON.parse(saved); else users = [{ username: "admin", password: "admin123", isAdmin: true }]; saveUsers(); }
+    function generateReceiptNumber() { return "USF-" + new Date().getFullYear() + String(Math.floor(Math.random() * 9999)).padStart(4,'0'); }
+    function formatAmount(amt) { return amt.toFixed(2); }
+    
+    // Auto Sync to Google Sheets (POST)
+    async function autoSyncToGoogleSheet() {
+        const url = localStorage.getItem("googleSheetUrl");
+        if(!url || url === "") return;
+        if(!data.length) return;
+        try {
+            await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            document.getElementById('syncStatus').innerHTML = '✅ Cloud sync active | Last saved: ' + new Date().toLocaleTimeString();
+            document.getElementById('syncStatus').className = 'sync-status success';
+        } catch(err) { console.error("Sync error:", err); }
+    }
+    
+    // Load from Google Sheets (GET) - Auto on Login!
+    async function loadFromGoogleSheet() {
+        const url = localStorage.getItem("googleSheetUrl");
+        if(!url || url === "") {
+            document.getElementById('syncStatus').innerHTML = '⚠️ Google Sheets not configured. Click "Setup Google Sheets" in menu.';
+            document.getElementById('syncStatus').className = 'sync-status error';
+            return false;
+        }
+        
+        document.getElementById('syncStatus').innerHTML = '🔄 Loading data from cloud...';
+        document.getElementById('syncStatus').className = 'sync-status loading';
+        
+        try {
+            const response = await fetch(url);
+            const result = await response.json();
+            
+            if(result.status === "success" && result.data && result.data.length > 0) {
+                data = result.data;
+                data.forEach(d => {
+                    if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
+                    if(!d.token) d.token = "";
+                    if(!d.receivedBy) d.receivedBy = "";
+                    if(!d.lastUpdated) d.lastUpdated = new Date().toLocaleString();
+                    if(d.pending === undefined) d.pending = (d.fees || 0) - (d.received || 0);
+                    if(!d.serial) d.serial = Math.floor(Math.random() * 10000) + 1;
+                });
+                saveToLocalStorage();
+                refreshTable();
+                document.getElementById('syncStatus').innerHTML = '✅ Cloud sync active | Loaded ' + data.length + ' customers | Last sync: ' + new Date().toLocaleTimeString();
+                document.getElementById('syncStatus').className = 'sync-status success';
+                showNotification('Loaded ' + data.length + ' customers from cloud!');
+                return true;
+            } else {
+                document.getElementById('syncStatus').innerHTML = '⚠️ No data in cloud. Add customers to start syncing.';
+                document.getElementById('syncStatus').className = 'sync-status error';
+                return false;
+            }
+        } catch(err) {
+            document.getElementById('syncStatus').innerHTML = '⚠️ Cloud connection error. Check URL in Setup.';
+            document.getElementById('syncStatus').className = 'sync-status error';
+            console.error("Load error:", err);
+            return false;
+        }
+    }
+    
+    async function testGoogleSheet() {
+        const url = document.getElementById('sheetWebAppUrl').value;
+        if(!url) { showNotification("Enter Web App URL", true); return false; }
+        localStorage.setItem("googleSheetUrl", url);
+        googleSheetUrl = url;
+        showNotification("Settings saved! Loading data from cloud...");
+        await loadFromGoogleSheet();
+        return true;
+    }
+    
     function updateFilterUI() {
         const filterType = document.getElementById('filterTypeSelect').value;
         const container = document.getElementById('filterValueContainer');
         const agents = [...new Set(data.map(c => c.receivedBy).filter(a => a && a.trim()))];
         const days = [1,5,10,15,20,25,30,31];
         
-        if (filterType === 'agent') {
+        if(filterType === 'agent') {
             container.innerHTML = `<label>Select Agent</label><select id="filterValueSelect"><option value="">All Agents</option>${agents.map(a => `<option value="${a}">${a}</option>`).join('')}</select>`;
-            // Add Enter key support for select
-            const selectEl = document.getElementById('filterValueSelect');
-            if (selectEl) {
-                selectEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') applyFilter(); });
-            }
-        } else if (filterType === 'day') {
+        } else if(filterType === 'day') {
             container.innerHTML = `<label>Select Due Day</label><select id="filterValueSelect"><option value="">All Days</option>${days.map(d => `<option value="${d}">${d}</option>`).join('')}</select>`;
-            const selectEl = document.getElementById('filterValueSelect');
-            if (selectEl) {
-                selectEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') applyFilter(); });
-            }
         } else {
             container.innerHTML = `<label>Value (e.g., >0, =0, or exact amount)</label><input type="text" id="filterValueInput" placeholder=">0, =0, or number">`;
-            const inputEl = document.getElementById('filterValueInput');
-            if (inputEl) {
-                inputEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') applyFilter(); });
-            }
         }
     }
     
     function getFilterValue() {
         const filterType = document.getElementById('filterTypeSelect').value;
-        if (filterType === 'agent' || filterType === 'day') {
+        if(filterType === 'agent' || filterType === 'day') {
             const select = document.getElementById('filterValueSelect');
             return select ? select.value : "";
         }
@@ -244,11 +313,10 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         return input ? input.value : "";
     }
     
-    // Main apply filter function (can be called from button or Enter key)
     function applyFilter() {
         const filterType = document.getElementById('filterTypeSelect').value;
         const filterValue = getFilterValue();
-        if (!filterValue || filterValue === "") {
+        if(!filterValue || filterValue === "") {
             showNotification("Please select/enter a value to filter", true);
             return;
         }
@@ -258,40 +326,31 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     }
     
     function applyFiltersToData(filteredData) {
-        if (!activeFilter.type || !activeFilter.value || activeFilter.value === "") return filteredData;
-        
+        if(!activeFilter.type || !activeFilter.value || activeFilter.value === "") return filteredData;
         const val = activeFilter.value.trim();
         return filteredData.filter(c => {
-            if (activeFilter.type === 'pending') {
-                if (val === ">0") return c.pending > 0;
-                if (val === "=0") return c.pending === 0;
-                const num = parseFloat(val);
-                if (!isNaN(num)) return c.pending === num;
-                return false;
+            if(activeFilter.type === 'pending') {
+                if(val === ">0") return c.pending > 0;
+                if(val === "=0") return c.pending === 0;
+                return parseFloat(val) === c.pending;
             }
-            if (activeFilter.type === 'received') {
-                if (val === ">0") return c.received > 0;
-                if (val === "=0") return c.received === 0;
-                const num = parseFloat(val);
-                if (!isNaN(num)) return c.received === num;
-                return false;
+            if(activeFilter.type === 'received') {
+                if(val === ">0") return c.received > 0;
+                if(val === "=0") return c.received === 0;
+                return parseFloat(val) === c.received;
             }
-            if (activeFilter.type === 'agent') {
-                return (c.receivedBy || "") === val;
-            }
-            if (activeFilter.type === 'day') {
-                return c.day === val;
-            }
+            if(activeFilter.type === 'agent') return (c.receivedBy || "") === val;
+            if(activeFilter.type === 'day') return c.day === val;
             return true;
         });
     }
     
     function applySearchFilter(rawData) {
-        if (activeSearch.field && activeSearch.value.trim() !== "") {
+        if(activeSearch.field && activeSearch.value.trim() !== "") {
             const val = activeSearch.value.toLowerCase().trim();
             return rawData.filter(c => {
-                if (activeSearch.field === "name") return c.name.toLowerCase().includes(val);
-                if (activeSearch.field === "phone") return (c.phone || "").toLowerCase().includes(val);
+                if(activeSearch.field === "name") return c.name.toLowerCase().includes(val);
+                if(activeSearch.field === "phone") return (c.phone || "").toLowerCase().includes(val);
                 return true;
             });
         }
@@ -300,16 +359,16 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     
     function refreshTable() {
         const tbody = document.getElementById('tableBody');
-        if (!tbody) return;
+        if(!tbody) return;
         tbody.innerHTML = "";
         let filtered = applySearchFilter([...data]);
         filtered = applyFiltersToData(filtered);
         
-        if (filtered.length === 0) {
+        if(filtered.length === 0) {
             const row = tbody.insertRow();
             const cell = row.insertCell(0);
             cell.colSpan = 11;
-            cell.innerHTML = '🔍 No records found matching your criteria';
+            cell.innerHTML = '🔍 No records found';
             cell.style.textAlign = 'center';
             cell.style.padding = '40px';
             return;
@@ -317,7 +376,7 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         
         filtered.forEach(entry => {
             const row = tbody.insertRow();
-            if (editingCustomerSerial === entry.serial) row.classList.add('selected');
+            if(editingCustomerSerial === entry.serial) row.classList.add('selected');
             const chkCell = row.insertCell(0);
             const cb = document.createElement('input');
             cb.type = 'checkbox';
@@ -325,7 +384,7 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
             cb.dataset.serial = entry.serial;
             cb.checked = selectedRowsSet.has(entry.serial);
             cb.addEventListener('change', () => {
-                if (cb.checked) selectedRowsSet.add(entry.serial);
+                if(cb.checked) selectedRowsSet.add(entry.serial);
                 else selectedRowsSet.delete(entry.serial);
                 updateSelectedStats();
             });
@@ -347,7 +406,7 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
             editBtn.style.padding = '5px 12px';
             editBtn.onclick = () => {
                 const idx = data.findIndex(d => d.serial === entry.serial);
-                if (idx !== -1) {
+                if(idx !== -1) {
                     const eData = data[idx];
                     document.getElementById('name').value = eData.name;
                     document.getElementById('phone').value = eData.phone || '';
@@ -369,20 +428,7 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         });
         updateSelectedStats();
         updateDashboard();
-        populateAgentFilter();
-        
-        // Update filter status display
-        const statusDiv = document.getElementById('filterStatus');
-        if (activeFilter.type && activeFilter.value) {
-            let filterText = '';
-            if (activeFilter.type === 'pending') filterText = `Pending: ${activeFilter.value}`;
-            else if (activeFilter.type === 'received') filterText = `Received: ${activeFilter.value}`;
-            else if (activeFilter.type === 'agent') filterText = `Agent: ${activeFilter.value}`;
-            else if (activeFilter.type === 'day') filterText = `Due Day: ${activeFilter.value}`;
-            statusDiv.innerHTML = `🔍 Active filter: ${filterText} | Showing ${filtered.length} of ${data.length} records`;
-        } else {
-            statusDiv.innerHTML = '';
-        }
+        updateFilterUI();
     }
     
     function updateDashboard() {
@@ -391,17 +437,10 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         document.getElementById('pendingCustomersCount').innerText = all.filter(c => c.pending > 0 && !c.isNextMonthPending).length;
         document.getElementById('receivedCustomersCount').innerText = all.filter(c => c.received > 0 && !c.isNextMonthPending).length;
         document.getElementById('nextMonthCustomersCount').innerText = all.filter(c => c.isNextMonthPending).length;
-        document.getElementById('totalFeesAmount').innerText = formatAmount(all.reduce((s, c) => s + c.fees, 0));
-        document.getElementById('pendingFeesAmount').innerText = formatAmount(all.filter(c => !c.isNextMonthPending).reduce((s, c) => s + c.pending, 0));
-        document.getElementById('receivedFeesAmount').innerText = formatAmount(all.filter(c => !c.isNextMonthPending).reduce((s, c) => s + c.received, 0));
-        document.getElementById('nextMonthFeesAmount').innerText = formatAmount(all.filter(c => c.isNextMonthPending).reduce((s, c) => s + c.fees, 0));
-        
-        const url = localStorage.getItem("googleSheetUrl");
-        if (url && url !== "") {
-            document.getElementById('syncStatus').innerHTML = '✅ Auto-sync to Google Sheets active';
-        } else {
-            document.getElementById('syncStatus').innerHTML = '⚠️ Google Sheets not configured. Click "Setup Google Sheets" in menu.';
-        }
+        document.getElementById('totalFeesAmount').innerText = formatAmount(all.reduce((s, c) => s + (c.fees || 0), 0));
+        document.getElementById('pendingFeesAmount').innerText = formatAmount(all.filter(c => !c.isNextMonthPending).reduce((s, c) => s + (c.pending || 0), 0));
+        document.getElementById('receivedFeesAmount').innerText = formatAmount(all.filter(c => !c.isNextMonthPending).reduce((s, c) => s + (c.received || 0), 0));
+        document.getElementById('nextMonthFeesAmount').innerText = formatAmount(all.filter(c => c.isNextMonthPending).reduce((s, c) => s + (c.fees || 0), 0));
     }
     
     function updateSelectedStats() {
@@ -410,49 +449,15 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         document.getElementById('selectAllCheckbox').checked = (selectedRowsSet.size === data.length && data.length > 0);
     }
     
-    function showNotification(msg, isError = false) {
-        const n = document.getElementById('notification');
-        n.textContent = msg;
-        n.classList.add('show');
-        if (isError) n.classList.add('error');
-        else n.classList.remove('error');
-        setTimeout(() => n.classList.remove('show'), 3500);
-    }
-    
-    function saveToLocalStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); autoSyncToGoogleSheet(); }
-    function saveUsers() { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
-    function loadUsers() { const saved = localStorage.getItem(USERS_KEY); if (saved) users = JSON.parse(saved); else users = [{ username: "admin", password: "admin123", isAdmin: true }]; saveUsers(); }
-    function generateReceiptNumber() { return "USF-" + new Date().getFullYear() + String(Math.floor(Math.random() * 9999)).padStart(4, '0'); }
-    function formatAmount(amt) { return amt.toFixed(2); }
-    
-    async function autoSyncToGoogleSheet() {
-        const url = localStorage.getItem("googleSheetUrl");
-        if (!url || url === "") return;
-        if (!data.length) return;
-        try {
-            await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-        } catch (err) { console.error("Sync error:", err); }
-    }
-    
-    async function testGoogleSheet() {
-        const url = document.getElementById('sheetWebAppUrl').value;
-        if (!url) { showNotification("Enter Web App URL", true); return false; }
-        localStorage.setItem("googleSheetUrl", url);
-        googleSheetUrl = url;
-        showNotification("Settings saved! Data will auto-sync on every change.");
-        await autoSyncToGoogleSheet();
-        return true;
-    }
-    
     function addNewEntry() {
         const name = document.getElementById('name').value.trim();
-        if (!name) return showNotification("Name required", true);
+        if(!name) return showNotification("Name required", true);
         const phone = document.getElementById('phone').value;
         const fees = parseFloat(document.getElementById('fees').value) || 0;
         let receivedVal = document.getElementById('received').value;
         const received = (receivedVal === '' || receivedVal === null) ? 0 : parseFloat(receivedVal) || 0;
         const day = document.getElementById('day').value;
-        if (!day) return showNotification("Due day", true);
+        if(!day) return showNotification("Due day", true);
         const pending = fees - received;
         const newSerial = data.length > 0 ? Math.max(...data.map(d => d.serial)) + 1 : 1;
         data.push({ serial: newSerial, name, phone, fees, received, pending, day, token: "", isNextMonthPending: false, receivedBy: currentUser?.username || "unknown", lastUpdated: new Date().toLocaleString() });
@@ -464,14 +469,14 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     }
     
     function updateEntryFromEdit() {
-        if (editingIndex === -1) return;
+        if(editingIndex === -1) return;
         const name = document.getElementById('name').value.trim();
         const phone = document.getElementById('phone').value;
         const fees = parseFloat(document.getElementById('fees').value) || 0;
         let receivedVal = document.getElementById('received').value;
         const received = (receivedVal === '' || receivedVal === null) ? 0 : parseFloat(receivedVal) || 0;
         const day = document.getElementById('day').value;
-        if (!name || !day) return;
+        if(!name || !day) return;
         const pending = fees - received;
         data[editingIndex] = { ...data[editingIndex], name, phone, fees, received, pending, day, lastUpdated: new Date().toLocaleString(), receivedBy: currentUser?.username };
         saveToLocalStorage();
@@ -493,10 +498,10 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     }
     
     function deleteSelectedRows() {
-        if (selectedRowsSet.size === 0) return;
-        if (confirm("Delete " + selectedRowsSet.size + " customers?")) {
+        if(selectedRowsSet.size === 0) return;
+        if(confirm("Delete " + selectedRowsSet.size + " customers?")) {
             data = data.filter(d => !selectedRowsSet.has(d.serial));
-            if (editingCustomerSerial && selectedRowsSet.has(editingCustomerSerial)) cancelEditMode();
+            if(editingCustomerSerial && selectedRowsSet.has(editingCustomerSerial)) cancelEditMode();
             selectedRowsSet.clear();
             saveToLocalStorage();
             refreshTable();
@@ -505,10 +510,10 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     }
     
     function markSelectedAsNextMonth() {
-        if (selectedRowsSet.size === 0) return;
+        if(selectedRowsSet.size === 0) return;
         Array.from(selectedRowsSet).forEach(s => {
             const idx = data.findIndex(d => d.serial === s);
-            if (idx !== -1) data[idx].isNextMonthPending = true;
+            if(idx !== -1) data[idx].isNextMonthPending = true;
         });
         selectedRowsSet.clear();
         saveToLocalStorage();
@@ -517,10 +522,10 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     }
     
     function unmarkSelectedFromNextMonth() {
-        if (selectedRowsSet.size === 0) return;
+        if(selectedRowsSet.size === 0) return;
         Array.from(selectedRowsSet).forEach(s => {
             const idx = data.findIndex(d => d.serial === s);
-            if (idx !== -1) data[idx].isNextMonthPending = false;
+            if(idx !== -1) data[idx].isNextMonthPending = false;
         });
         selectedRowsSet.clear();
         saveToLocalStorage();
@@ -529,11 +534,11 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     }
     
     function resetCustomerSelected() {
-        if (selectedRowsSet.size === 0) return;
-        if (confirm("Reset payment for " + selectedRowsSet.size + " customers?")) {
+        if(selectedRowsSet.size === 0) return;
+        if(confirm("Reset payment for " + selectedRowsSet.size + " customers?")) {
             selectedRowsSet.forEach(serial => {
                 const idx = data.findIndex(d => d.serial === serial);
-                if (idx !== -1) {
+                if(idx !== -1) {
                     data[idx].token = "";
                     data[idx].received = 0;
                     data[idx].pending = data[idx].fees;
@@ -549,14 +554,10 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     }
     
     function allResetSpecial() {
-        if (confirm("⚠️ ALL RESET SPECIAL:\n- Next Month customers: Their pending amount will DOUBLE (fees×2)\n- Then ALL customers become CURRENT\n- All receipts and payments cleared.\nProceed?")) {
+        if(confirm("⚠️ ALL RESET SPECIAL:\n- Next Month customers: Pending amount DOUBLE\n- All become CURRENT\nProceed?")) {
             data.forEach(c => {
-                if (c.isNextMonthPending) { c.pending = c.fees * 2; } else { c.pending = c.fees; }
-                c.received = 0;
-                c.token = "";
-                c.receivedBy = "";
-                c.lastUpdated = "";
-                c.isNextMonthPending = false;
+                if(c.isNextMonthPending) { c.pending = c.fees * 2; } else { c.pending = c.fees; }
+                c.received = 0; c.token = ""; c.receivedBy = ""; c.lastUpdated = ""; c.isNextMonthPending = false;
             });
             saveToLocalStorage();
             refreshTable();
@@ -565,15 +566,15 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     }
     
     function generateReceiptForEdit() {
-        if (editingIndex === -1) { showNotification("Edit a customer first", true); return null; }
+        if(editingIndex === -1) { showNotification("Edit a customer first", true); return null; }
         const cust = data[editingIndex];
-        if (!cust.token || cust.token === "") { cust.token = generateReceiptNumber(); saveToLocalStorage(); refreshTable(); }
+        if(!cust.token || cust.token === "") { cust.token = generateReceiptNumber(); saveToLocalStorage(); refreshTable(); }
         return cust;
     }
     
     function handleSMS() {
         const cust = generateReceiptForEdit();
-        if (cust && cust.phone) {
+        if(cust && cust.phone) {
             const msg = `US FIBER NET\nReceipt: ${cust.token}\nPaid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`;
             window.location.href = `sms:${cust.phone}?body=${encodeURIComponent(msg)}`;
             showNotification("SMS opened");
@@ -582,18 +583,12 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     
     function handleWhatsApp() {
         const cust = generateReceiptForEdit();
-        if (cust && cust.phone) {
+        if(cust && cust.phone) {
             const msg = `⚡ US FIBER NET ⚡\nReceipt No: ${cust.token}\nAmount Paid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`;
             const phone = cust.phone.replace(/[^0-9+]/g, '').replace('+', '');
             window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
             showNotification("WhatsApp opened");
         } else showNotification("Phone missing or edit a customer", true);
-    }
-    
-    function populateAgentFilter() {
-        const agentSet = new Set();
-        data.forEach(c => { if (c.receivedBy && c.receivedBy.trim()) agentSet.add(c.receivedBy); });
-        updateFilterUI();
     }
     
     function backupJSON() {
@@ -611,35 +606,35 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         reader.onload = e => {
             try {
                 const j = JSON.parse(e.target.result);
-                if (j.data) {
+                if(j.data) {
                     data = j.data;
-                    if (j.users) { users = j.users; saveUsers(); }
+                    if(j.users) { users = j.users; saveUsers(); }
                     data.forEach(d => {
-                        if (d.isNextMonthPending === undefined) d.isNextMonthPending = false;
-                        if (!d.token) d.token = "";
-                        if (!d.receivedBy) d.receivedBy = "";
-                        if (!d.lastUpdated) d.lastUpdated = "";
-                        if (d.pending === undefined) d.pending = d.fees - d.received;
+                        if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
+                        if(!d.token) d.token = "";
+                        if(!d.receivedBy) d.receivedBy = "";
+                        if(!d.lastUpdated) d.lastUpdated = "";
+                        if(d.pending === undefined) d.pending = d.fees - d.received;
                     });
                     saveToLocalStorage();
                     refreshTable();
                     showNotification("Restored");
                 }
-            } catch (err) { showNotification("Invalid file", true); }
+            } catch(err) { showNotification("Invalid file", true); }
         };
         reader.readAsText(file);
     }
     
     function loadFromLocalStorage() {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
+        if(saved) {
             data = JSON.parse(saved);
             data.forEach(d => {
-                if (d.isNextMonthPending === undefined) d.isNextMonthPending = false;
-                if (!d.token) d.token = "";
-                if (!d.receivedBy) d.receivedBy = "";
-                if (!d.lastUpdated) d.lastUpdated = "";
-                if (d.pending === undefined) d.pending = d.fees - d.received;
+                if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
+                if(!d.token) d.token = "";
+                if(!d.receivedBy) d.receivedBy = "";
+                if(!d.lastUpdated) d.lastUpdated = "";
+                if(d.pending === undefined) d.pending = d.fees - d.received;
             });
         } else {
             data = [];
@@ -647,8 +642,8 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         refreshTable();
     }
     
-    // Event bindings
-    document.getElementById('dataForm').addEventListener('submit', (e) => { e.preventDefault(); if (editingIndex === -1) addNewEntry(); else updateEntryFromEdit(); });
+    // Event Bindings
+    document.getElementById('dataForm').addEventListener('submit', (e) => { e.preventDefault(); if(editingIndex === -1) addNewEntry(); else updateEntryFromEdit(); });
     document.getElementById('updateBtn').onclick = updateEntryFromEdit;
     document.getElementById('cancelBtn').onclick = cancelEditMode;
     document.getElementById('sendSmsBtn').onclick = handleSMS;
@@ -661,14 +656,14 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         document.querySelectorAll('.row-selector').forEach(cb => {
             cb.checked = e.target.checked;
             const s = parseInt(cb.dataset.serial);
-            if (e.target.checked) selectedRowsSet.add(s);
+            if(e.target.checked) selectedRowsSet.add(s);
             else selectedRowsSet.delete(s);
         });
         updateSelectedStats();
     });
     document.getElementById('backupJsonBtn').onclick = backupJSON;
     document.getElementById('restoreBtn').onclick = () => document.getElementById('restoreFile').click();
-    document.getElementById('restoreFile').onchange = e => { if (e.target.files.length) restoreData(e.target.files[0]); };
+    document.getElementById('restoreFile').onchange = e => { if(e.target.files.length) restoreData(e.target.files[0]); };
     document.getElementById('reportBtn').onclick = () => {
         let csv = "Name,Phone,Fees,Received,Pending,Day,Status\n" + data.map(c => `${c.name},${c.phone},${c.fees},${c.received},${c.pending},${c.day},${c.isNextMonthPending ? "Next" : "Current"}`).join("\n");
         const blob = new Blob([csv], { type: "text/csv" });
@@ -680,12 +675,11 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     document.getElementById('allResetBtn').onclick = allResetSpecial;
     document.getElementById('resetDefaultPasswordBtn').onclick = () => {
         const admin = users.find(u => u.username === 'admin');
-        if (admin) admin.password = "admin123";
+        if(admin) admin.password = "admin123";
         saveUsers();
         showNotification("Admin password reset to admin123");
     };
     
-    // Search
     document.getElementById('doSearchBtn').onclick = () => {
         activeSearch.field = document.getElementById('searchField').value;
         activeSearch.value = document.getElementById('searchValue').value;
@@ -697,17 +691,10 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         refreshTable();
         showNotification("Search cleared");
     };
-    document.getElementById('searchValue').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('doSearchBtn').click(); });
+    document.getElementById('searchValue').addEventListener('keypress', e => { if(e.key === 'Enter') document.getElementById('doSearchBtn').click(); });
     
-    // Filter - with dynamic UI update and Enter key support
-    document.getElementById('filterTypeSelect').addEventListener('change', () => {
-        updateFilterUI();
-        activeFilter = { type: "", value: "" };
-        refreshTable();
-    });
-    
+    document.getElementById('filterTypeSelect').addEventListener('change', () => { updateFilterUI(); activeFilter = { type: "", value: "" }; refreshTable(); });
     document.getElementById('doFilterBtn').onclick = applyFilter;
-    
     document.getElementById('clearFilterBtn').onclick = () => {
         activeFilter = { type: "", value: "" };
         document.getElementById('filterTypeSelect').value = "pending";
@@ -716,7 +703,6 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         showNotification("All filters cleared");
     };
     
-    // Google Sheet Modal
     document.getElementById('setupSheetBtn').onclick = () => {
         document.getElementById('sheetWebAppUrl').value = localStorage.getItem("googleSheetUrl") || "";
         document.getElementById('sheetModal').style.display = 'flex';
@@ -724,26 +710,25 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     };
     document.getElementById('saveSheetSettings').onclick = async () => { await testGoogleSheet(); document.getElementById('sheetModal').style.display = 'none'; };
     document.getElementById('closeSheetModal').onclick = () => document.getElementById('sheetModal').style.display = 'none';
+    document.getElementById('manualSyncBtn').onclick = async () => { await loadFromGoogleSheet(); };
     
-    // User Management
     document.getElementById('userManagementBtn').onclick = () => {
-        if (!currentUser?.isAdmin) return;
+        if(!currentUser?.isAdmin) return;
         const container = document.getElementById('userListContainer');
         container.innerHTML = '';
         users.forEach((u, idx) => {
             const div = document.createElement('div');
-            if (u.username !== 'admin') div.innerHTML = `<span>${u.username}</span><button class="delete-user-btn" data-idx="${idx}">Delete</button>`;
+            if(u.username !== 'admin') div.innerHTML = `<span>${u.username}</span><button class="delete-user-btn" data-idx="${idx}">Delete</button>`;
             else div.innerHTML = `<span>${u.username} (Admin)</span>`;
             container.appendChild(div);
         });
         document.querySelectorAll('.delete-user-btn').forEach(btn => {
             btn.onclick = () => {
                 const idx = parseInt(btn.dataset.idx);
-                if (users[idx].username !== 'admin') {
+                if(users[idx].username !== 'admin') {
                     users.splice(idx, 1);
                     saveUsers();
                     document.getElementById('userModal').style.display = 'none';
-                    populateAgentFilter();
                     showNotification("User deleted");
                 }
             };
@@ -753,13 +738,12 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
     document.getElementById('createUserBtn').onclick = () => {
         const un = document.getElementById('newUsername').value.trim();
         const pw = document.getElementById('newUserPassword').value;
-        if (!un) return;
-        if (pw.length < 4) return;
-        if (users.find(u => u.username === un)) return;
+        if(!un) return;
+        if(pw.length < 4) return;
+        if(users.find(u => u.username === un)) return;
         users.push({ username: un, password: pw, isAdmin: false });
         saveUsers();
         document.getElementById('userModal').style.display = 'none';
-        populateAgentFilter();
         showNotification("User created");
     };
     document.getElementById('closeUserModalBtn').onclick = () => document.getElementById('userModal').style.display = 'none';
@@ -768,11 +752,11 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         const curr = document.getElementById('currentPassword').value;
         const newp = document.getElementById('newPassword').value;
         const conf = document.getElementById('confirmPassword').value;
-        if (curr !== currentUser.password) return showNotification("Wrong password", true);
-        if (newp !== conf) return;
+        if(curr !== currentUser.password) return showNotification("Wrong password", true);
+        if(newp !== conf) return;
         currentUser.password = newp;
         const idx = users.findIndex(u => u.username === currentUser.username);
-        if (idx !== -1) users[idx].password = newp;
+        if(idx !== -1) users[idx].password = newp;
         saveUsers();
         document.getElementById('passwordModal').style.display = 'none';
         showNotification("Password changed");
@@ -790,7 +774,7 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         const username = document.getElementById('loginUsername').value.trim();
         const password = document.getElementById('loginPassword').value;
         const user = users.find(u => u.username === username && u.password === password);
-        if (user) {
+        if(user) {
             currentUser = { ...user };
             sessionStorage.setItem('usFiberLoggedIn', 'true');
             sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -799,18 +783,20 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
             document.getElementById('userInfoDisplay').innerHTML = username + (user.isAdmin ? ' (Admin)' : '');
             document.getElementById('userManagementBtn').style.display = user.isAdmin ? 'block' : 'none';
             loadFromLocalStorage();
-            showNotification("Welcome " + username);
+            // AUTO SYNC ON LOGIN - Cloud se data load karega!
+            setTimeout(() => { loadFromGoogleSheet(); }, 500);
+            showNotification("Welcome " + username + "! Loading cloud data...");
         } else {
             document.getElementById('loginMessage').style.display = 'block';
         }
     }
     
     document.getElementById('loginBtn').onclick = handleLogin;
-    document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
+    document.getElementById('loginPassword').addEventListener('keypress', e => { if(e.key === 'Enter') handleLogin(); });
     
     const menuBtn = document.getElementById('menuBtn'), dropdown = document.getElementById('dropdownMenu');
     menuBtn.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); };
-    window.onclick = (e) => { if (menuBtn && dropdown && !menuBtn.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('show'); };
+    window.onclick = (e) => { if(menuBtn && dropdown && !menuBtn.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('show'); };
     
     document.getElementById('searchPanelBtn').onclick = () => {
         document.getElementById('searchPanel').classList.toggle('active');
@@ -821,7 +807,6 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         document.getElementById('filterPanel').classList.toggle('active');
         document.getElementById('searchPanel').classList.remove('active');
         dropdown.classList.remove('show');
-        // Re-attach enter key listeners when panel opens
         setTimeout(() => updateFilterUI(), 50);
     };
     
@@ -829,13 +814,15 @@ function doGet() { return ContentService.createTextOutput("Server OK"); }
         loadUsers();
         const logged = sessionStorage.getItem('usFiberLoggedIn') === 'true';
         const saved = sessionStorage.getItem('currentUser');
-        if (logged && saved) {
+        if(logged && saved) {
             currentUser = JSON.parse(saved);
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainContainer').style.display = 'block';
             document.getElementById('userInfoDisplay').innerHTML = currentUser.username + (currentUser.isAdmin ? ' (Admin)' : '');
             document.getElementById('userManagementBtn').style.display = currentUser.isAdmin ? 'block' : 'none';
             loadFromLocalStorage();
+            // AUTO SYNC ON PAGE LOAD
+            setTimeout(() => { loadFromGoogleSheet(); }, 500);
         } else {
             document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('mainContainer').style.display = 'none';
