@@ -186,15 +186,15 @@
 
 <script>
     // ============================================================
-    // YOUR GOOGLE APPS SCRIPT URL - FULLY INTEGRATED
+    // YOUR GOOGLE APPS SCRIPT URL - FULLY CONFIGURED
     // ============================================================
-    const DEFAULT_GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyaRt1mGLIYPA8-8hR1jK8J9TgTLFDpOQEI4qfnMmz6vzcOcCWL8-GSjnMMpMQcjz0/exec";
+    const DEFAULT_GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycby5cKvAotWc-5S2yDbH5GmPIhXefW_8VcMAeGo5hn-RGBP_Jo1SXUZonLA-DynGdtM/exec";
     
     let data = [], editingIndex = -1, editingCustomerSerial = null, selectedRowsSet = new Set(), currentUser = null, users = [];
     let activeSearch = { field: "", value: "" };
     let activeFilter = { type: "", value: "" };
     let googleSheetUrl = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
-    const STORAGE_KEY = "usFiberNetV15", USERS_KEY = "usFiberNetUsers";
+    const STORAGE_KEY = "usFiberNetFinal", USERS_KEY = "usFiberNetUsers";
     
     if(!localStorage.getItem("googleSheetUrl")) localStorage.setItem("googleSheetUrl", DEFAULT_GOOGLE_SHEET_URL);
     
@@ -208,20 +208,31 @@
     }
     
     // ============================================================
-    // AUTO SYNC CUSTOMER DATA TO GOOGLE SHEET
+    // AUTO SYNC TO GOOGLE SHEET - FIXED
     // ============================================================
     async function autoSyncToGoogleSheet() {
         const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
         if(!url || url === "" || !data.length) return;
         try {
-            await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            const response = await fetch(url, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if(result.status === "success") {
+                const syncDiv = document.getElementById('syncStatus');
+                if(syncDiv) { syncDiv.innerHTML = '✅ Cloud sync active | Last saved: ' + new Date().toLocaleTimeString(); syncDiv.className = 'sync-status success'; }
+            }
+        } catch(err) { 
+            console.error("Auto sync error:", err);
             const syncDiv = document.getElementById('syncStatus');
-            if(syncDiv) { syncDiv.innerHTML = '✅ Cloud sync active | Last saved: ' + new Date().toLocaleTimeString(); syncDiv.className = 'sync-status success'; }
-        } catch(err) { console.error("Auto sync error:", err); }
+            if(syncDiv) { syncDiv.innerHTML = '⚠️ Cloud sync error: ' + err.message; syncDiv.className = 'sync-status error'; }
+        }
     }
     
     // ============================================================
-    // AUTO SYNC USER MANAGEMENT DATA TO GOOGLE SHEET
+    // AUTO SYNC USERS TO GOOGLE SHEET
     // ============================================================
     async function autoSyncUsersToGoogleSheet() {
         const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
@@ -229,7 +240,6 @@
         try {
             await fetch(url, { 
                 method: 'POST', 
-                mode: 'no-cors', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify({ type: "users", users: users })
             });
@@ -237,56 +247,51 @@
     }
     
     // ============================================================
-    // LOAD CUSTOMER DATA FROM GOOGLE SHEET
+    // LOAD DATA FROM GOOGLE SHEET
     // ============================================================
     async function loadFromGoogleSheet() {
         const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
-        if(!url || url === "") { const sd = document.getElementById('syncStatus'); if(sd){ sd.innerHTML = '⚠️ Google Sheets not configured.'; sd.className = 'sync-status error'; } return false; }
+        if(!url || url === "") { 
+            const sd = document.getElementById('syncStatus'); 
+            if(sd){ sd.innerHTML = '⚠️ Google Sheets not configured.'; sd.className = 'sync-status error'; } 
+            return false; 
+        }
         const syncDiv = document.getElementById('syncStatus');
-        if(syncDiv) { syncDiv.innerHTML = '🔄 Loading customer data from cloud...'; syncDiv.className = 'sync-status loading'; }
+        if(syncDiv) { syncDiv.innerHTML = '🔄 Loading from cloud...'; syncDiv.className = 'sync-status loading'; }
         try {
-            const response = await fetch(url);
+            const response = await fetch(url + "?type=customers");
             const result = await response.json();
-            if(result.status === "success" && result.data && Array.isArray(result.data) && result.data.length > 0) {
-                data = result.data;
-                data.forEach(d => {
-                    if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
-                    if(!d.token) d.token = "";
-                    if(!d.receivedBy) d.receivedBy = "";
-                    if(!d.lastUpdated) d.lastUpdated = new Date().toLocaleString();
-                    if(d.pending === undefined) d.pending = (d.fees || 0) - (d.received || 0);
-                    if(!d.serial) d.serial = Math.floor(Math.random() * 10000) + 1;
-                });
-                saveToLocalStorage();
-                refreshTable();
-                if(syncDiv) { syncDiv.innerHTML = '✅ Loaded ' + data.length + ' customers | ' + new Date().toLocaleTimeString(); syncDiv.className = 'sync-status success'; }
-                showNotification('✅ Loaded ' + data.length + ' customers from cloud!');
+            if(result.status === "success" && result.data && Array.isArray(result.data)) {
+                if(result.data.length > 0) {
+                    data = result.data;
+                    data.forEach(d => {
+                        if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
+                        if(!d.token) d.token = "";
+                        if(!d.receivedBy) d.receivedBy = "";
+                        if(!d.lastUpdated) d.lastUpdated = new Date().toLocaleString();
+                        if(d.pending === undefined) d.pending = (d.fees || 0) - (d.received || 0);
+                        if(!d.serial) d.serial = Math.floor(Math.random() * 10000) + 1;
+                    });
+                    saveToLocalStorage();
+                    refreshTable();
+                    if(syncDiv) { syncDiv.innerHTML = '✅ Loaded ' + data.length + ' customers from cloud!'; syncDiv.className = 'sync-status success'; }
+                    showNotification('✅ Loaded ' + data.length + ' customers from cloud!');
+                } else {
+                    if(data.length > 0) {
+                        // Local data hai, cloud empty - local ko cloud me save karein
+                        await autoSyncToGoogleSheet();
+                        if(syncDiv) { syncDiv.innerHTML = '✅ Synced ' + data.length + ' customers to cloud!'; syncDiv.className = 'sync-status success'; }
+                        showNotification('✅ Synced ' + data.length + ' customers to cloud!');
+                    } else {
+                        if(syncDiv) { syncDiv.innerHTML = '📭 No data. Add customers to start syncing.'; syncDiv.className = 'sync-status error'; }
+                    }
+                }
                 return true;
-            } else {
-                if(syncDiv) { syncDiv.innerHTML = '📭 No customer data in cloud. Add customers to start syncing.'; syncDiv.className = 'sync-status error'; }
-                return false;
             }
         } catch(err) {
-            if(syncDiv) { syncDiv.innerHTML = '⚠️ Cloud connection issue.'; syncDiv.className = 'sync-status error'; }
+            if(syncDiv) { syncDiv.innerHTML = '⚠️ Connection error: ' + err.message; syncDiv.className = 'sync-status error'; }
             return false;
         }
-    }
-    
-    // ============================================================
-    // LOAD USER DATA FROM GOOGLE SHEET
-    // ============================================================
-    async function loadUsersFromGoogleSheet() {
-        const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
-        if(!url || url === "") return false;
-        try {
-            const response = await fetch(url + "?type=users");
-            const result = await response.json();
-            if(result.status === "success" && result.data && Array.isArray(result.data) && result.data.length > 0) {
-                users = result.data;
-                saveUsers();
-                return true;
-            }
-        } catch(err) { console.error("Load users error:", err); }
         return false;
     }
     
@@ -294,9 +299,22 @@
         const url = document.getElementById('sheetWebAppUrl').value;
         if(!url) { showNotification("Enter Web App URL", true); return false; }
         localStorage.setItem("googleSheetUrl", url);
-        showNotification("Settings saved! Loading data...");
-        await loadFromGoogleSheet();
-        return true;
+        showNotification("Settings saved! Testing connection...");
+        try {
+            const response = await fetch(url + "?type=customers");
+            const result = await response.json();
+            if(result.status === "success") {
+                showNotification("✅ Connection successful! Loading data...");
+                await loadFromGoogleSheet();
+                return true;
+            } else {
+                showNotification("❌ Connection failed: " + JSON.stringify(result), true);
+                return false;
+            }
+        } catch(err) {
+            showNotification("❌ Cannot connect: " + err.message, true);
+            return false;
+        }
     }
     
     function saveToLocalStorage() { 
@@ -326,10 +344,16 @@
         const days = [1,5,10,15,20,25,30,31];
         if(filterType === 'agent') {
             container.innerHTML = `<label>Select Agent</label><select id="filterValueSelect"><option value="">All Agents</option>${agents.map(a => `<option value="${a}">${a}</option>`).join('')}</select>`;
+            const selectEl = document.getElementById('filterValueSelect');
+            if(selectEl) selectEl.addEventListener('keypress', (e) => { if(e.key === 'Enter') applyFilter(); });
         } else if(filterType === 'day') {
             container.innerHTML = `<label>Select Due Day</label><select id="filterValueSelect"><option value="">All Days</option>${days.map(d => `<option value="${d}">${d}</option>`).join('')}</select>`;
+            const selectEl = document.getElementById('filterValueSelect');
+            if(selectEl) selectEl.addEventListener('keypress', (e) => { if(e.key === 'Enter') applyFilter(); });
         } else {
             container.innerHTML = `<label>Value (e.g., >0, =0, or exact amount)</label><input type="text" id="filterValueInput" placeholder=">0, =0, or number">`;
+            const inputEl = document.getElementById('filterValueInput');
+            if(inputEl) inputEl.addEventListener('keypress', (e) => { if(e.key === 'Enter') applyFilter(); });
         }
     }
     
@@ -341,6 +365,34 @@
         }
         const input = document.getElementById('filterValueInput');
         return input ? input.value : "";
+    }
+    
+    function applyFilter() {
+        const filterType = document.getElementById('filterTypeSelect').value;
+        const filterValue = getFilterValue();
+        if(!filterValue || filterValue === "") {
+            showNotification("Please select/enter a value to filter", true);
+            return;
+        }
+        activeFilter = { type: filterType, value: filterValue };
+        refreshTable();
+        showNotification(`Filter applied: ${filterType} = ${filterValue}`);
+    }
+    
+    function clearFilter() {
+        activeFilter = { type: "", value: "" };
+        document.getElementById('filterTypeSelect').value = "pending";
+        document.getElementById('filterValueInput').value = "";
+        updateFilterUI();
+        refreshTable();
+        showNotification("Filter cleared");
+    }
+    
+    function clearSearch() {
+        activeSearch = { field: "", value: "" };
+        document.getElementById('searchValue').value = "";
+        refreshTable();
+        showNotification("Search cleared");
     }
     
     function applyFiltersToData(filteredData) {
@@ -539,34 +591,31 @@
         }
     }
     
-    // Professional Report Generator
     function generateProfessionalReport() {
         const now = new Date();
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         const currentMonth = monthNames[now.getMonth()];
         const currentYear = now.getFullYear();
         const currentCustomers = data.filter(c => !c.isNextMonthPending);
-        const nextMonthCustomers = data.filter(c => c.isNextMonthPending);
         const totalFees = currentCustomers.reduce((s,c)=>s+c.fees,0);
         const totalReceived = currentCustomers.reduce((s,c)=>s+c.received,0);
         const totalPending = currentCustomers.reduce((s,c)=>s+c.pending,0);
         const collectionRate = totalFees > 0 ? ((totalReceived/totalFees)*100).toFixed(2) : 0;
-        const nextMonthTotalFees = nextMonthCustomers.reduce((s,c)=>s+c.fees,0);
         
         const agentMap = new Map();
         currentCustomers.forEach(c => { const agent = c.receivedBy && c.receivedBy.trim() ? c.receivedBy : "System"; agentMap.set(agent, (agentMap.get(agent)||0) + c.received); });
-        let agentRows = ""; for(let [agent, amt] of agentMap.entries()) agentRows += `<tr><td style="padding:8px; border:1px solid #ddd;">${agent}</td><td style="padding:8px; border:1px solid #ddd;">PKR ${formatAmount(amt)}</td></tr>`;
+        let agentRows = ""; for(let [agent, amt] of agentMap.entries()) agentRows += `<tr><td style="padding:8px; border:1px solid #ddd;">${agent}</td><td style="padding:8px; border:1px solid #ddd;">PKR ${formatAmount(amt)}</td>`;
         
         const pendingList = currentCustomers.filter(c => c.pending > 0);
-        let pendingRows = ""; pendingList.forEach(c => { pendingRows += `<tr><td style="padding:8px; border:1px solid #ddd;">${c.name}</td><td style="padding:8px; border:1px solid #ddd;">${c.phone || 'N/A'}</td><td style="padding:8px; border:1px solid #ddd;">PKR ${formatAmount(c.fees)}</td><td style="padding:8px; border:1px solid #ddd;">PKR ${formatAmount(c.received)}</td><td style="padding:8px; border:1px solid #ddd; color:#ff9800; font-weight:bold;">PKR ${formatAmount(c.pending)}</td><td style="padding:8px; border:1px solid #ddd;">${c.day}</td><td style="padding:8px; border:1px solid #ddd;">${c.token || '—'}</td><td style="padding:8px; border:1px solid #ddd;">${c.receivedBy || '—'}<br/><small>${c.lastUpdated?.split(',')[0] || '—'}</small></td></tr>`; });
+        let pendingRows = ""; pendingList.forEach(c => { pendingRows += `<tr><td style="padding:8px; border:1px solid #ddd;">${c.name}</td><td style="padding:8px; border:1px solid #ddd;">${c.phone || 'N/A'}</td><td style="padding:8px; border:1px solid #ddd;">PKR ${formatAmount(c.fees)}</td><td style="padding:8px; border:1px solid #ddd;">PKR ${formatAmount(c.received)}</td><td style="padding:8px; border:1px solid #ddd; color:#ff9800; font-weight:bold;">PKR ${formatAmount(c.pending)}</td><td style="padding:8px; border:1px solid #ddd;">${c.day}</td><td style="padding:8px; border:1px solid #ddd;">${c.token || '—'}</td><td style="padding:8px; border:1px solid #ddd;">${c.receivedBy || '—'}<br/><small>${c.lastUpdated?.split(',')[0] || '—'}</small></td>`);
+        });
         
-        const reportHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>US Fiber Net - Monthly Report ${currentMonth} ${currentYear}</title><style>body{font-family:'Segoe UI',Arial,sans-serif;margin:30px;background:white;color:#333;font-size:12px;} .header{text-align:center;border-bottom:3px solid #0099cc;padding-bottom:20px;margin-bottom:30px;} .header h1{color:#0099cc;margin:0;font-size:28px;} .header h2{color:#666;margin:10px 0 0;font-size:18px;} .summary-cards{display:flex;gap:15px;margin-bottom:30px;flex-wrap:wrap;} .card{background:#f5f5f5;border-radius:12px;padding:15px;flex:1;min-width:130px;text-align:center;border-left:4px solid #0099cc;} .card h3{margin:0 0 8px;font-size:12px;color:#666;} .card .value{font-size:20px;font-weight:bold;color:#0099cc;} .card.pending .value{color:#ff9800;} .card.received .value{color:#4caf50;} .card.next .value{color:#9c27b0;} .table-container{overflow-x:auto;margin:20px 0;} table{width:100%;border-collapse:collapse;min-width:600px;} th,td{border:1px solid #ddd;padding:10px 8px;text-align:left;vertical-align:top;} th{background:#0099cc;color:white;font-weight:600;white-space:nowrap;} .footer{margin-top:40px;text-align:center;font-size:11px;color:#999;border-top:1px solid #ddd;padding-top:20px;} .section-title{color:#0099cc;border-left:4px solid #0099cc;padding-left:15px;margin:25px 0 15px;font-size:18px;}</style></head><body>
-            <div class="header"><h1>US Fiber Net</h1><h2>Monthly Collection Report - ${currentMonth} ${currentYear}</h2><p>Generated: ${now.toLocaleDateString()} at ${now.toLocaleTimeString()} | User: ${currentUser?.username || 'System'}</p></div>
-            <div class="summary-cards"><div class="card"><h3>Total Customers</h3><div class="value">${currentCustomers.length}</div></div><div class="card"><h3>Total Fees</h3><div class="value">PKR ${formatAmount(totalFees)}</div></div><div class="card received"><h3>Total Collected</h3><div class="value">PKR ${formatAmount(totalReceived)}</div></div><div class="card pending"><h3>Total Pending</h3><div class="value">PKR ${formatAmount(totalPending)}</div></div><div class="card"><h3>Collection Rate</h3><div class="value">${collectionRate}%</div></div><div class="card next"><h3>Next Month Fees</h3><div class="value">PKR ${formatAmount(nextMonthTotalFees)}</div></div></div>
-            <h3 class="section-title">📊 Collection Summary</h3><div class="table-container"><table><thead><tr><th>Description</th><th>Count</th><th>Amount (PKR)</th></tr></thead><tbody><tr><td>Total Monthly Fees</td><td>${currentCustomers.length}</td><td>${formatAmount(totalFees)}</td></tr><tr style="background:#e8f5e9;"><td>Amount Received</td><td>${currentCustomers.filter(c=>c.received>0).length} customers</td><td><strong>${formatAmount(totalReceived)}</strong></td></tr><tr style="background:#fff3e0;"><td>Pending Amount</td><td>${pendingList.length} customers</td><td><strong>${formatAmount(totalPending)}</strong></td></tr><tr><td>Fully Paid Customers</td><td>${currentCustomers.filter(c=>c.pending===0).length}</td><td>-</td></tr><tr><td>Partially Paid / Unpaid</td><td>${pendingList.length}</td><td>-</td></tr><tr><td>Next Month Customers</td><td>${nextMonthCustomers.length}</td><td>${formatAmount(nextMonthTotalFees)}</td></tr></tbody></table></div>
-            <h3 class="section-title">👨‍💼 Agent Performance</h3><div class="table-container"><table><thead><tr><th>Agent Name</th><th>Amount Collected (PKR)</th></tr></thead><tbody>${agentRows || '<tr><td colspan="2">No data available</td></tr>'}</tbody></table></div>
-            <h3 class="section-title">⚠️ Pending Customers (with Receipt & Agent Details)</h3><div class="table-container"><table><thead><tr><th>Customer Name</th><th>Phone</th><th>Monthly Fees</th><th>Received</th><th>Pending</th><th>Due Day</th><th>Receipt No.</th><th>Agent / Date</th></tr></thead><tbody>${pendingRows || '<tr><td colspan="8">No pending customers</td></tr>'}</tbody></table></div>
-            <div class="footer"><p>US Fiber Net - Smart Billing System | All amounts are in PKR</p></div>
+        const reportHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>US Fiber Net Report</title><style>body{font-family:'Segoe UI',sans-serif;margin:30px;} .header{text-align:center;border-bottom:3px solid #0099cc;padding-bottom:20px;} .summary-cards{display:flex;gap:15px;flex-wrap:wrap;margin:20px 0;} .card{background:#f5f5f5;border-radius:12px;padding:15px;flex:1;text-align:center;border-left:4px solid #0099cc;} .card .value{font-size:24px;font-weight:bold;color:#0099cc;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ddd;padding:10px;text-align:left;} th{background:#0099cc;color:white;}</style></head><body>
+            <div class="header"><h1>US Fiber Net</h1><h2>Monthly Report - ${currentMonth} ${currentYear}</h2><p>Generated: ${now.toLocaleString()} | User: ${currentUser?.username}</p></div>
+            <div class="summary-cards"><div class="card"><h3>Total Customers</h3><div class="value">${currentCustomers.length}</div></div><div class="card"><h3>Total Fees</h3><div class="value">PKR ${formatAmount(totalFees)}</div></div><div class="card"><h3>Collected</h3><div class="value">PKR ${formatAmount(totalReceived)}</div></div><div class="card"><h3>Pending</h3><div class="value">PKR ${formatAmount(totalPending)}</div></div><div class="card"><h3>Collection Rate</h3><div class="value">${collectionRate}%</div></div></div>
+            <h3>Agent Performance</h3><table><thead><tr><th>Agent</th><th>Collected (PKR)</th></tr></thead><tbody>${agentRows || '<tr><td colspan="2">No data</td></tr>'}</tbody></table>
+            <h3>Pending Customers</h3><table><thead><tr><th>Name</th><th>Phone</th><th>Fees</th><th>Received</th><th>Pending</th><th>Due Day</th><th>Receipt No.</th><th>Agent</th></tr></thead><tbody>${pendingRows || '<tr><td colspan="8">No pending customers</td></tr>'}</tbody></table>
+            <div class="footer"><p>US Fiber Net - Smart Billing System</p></div>
         </body></html>`;
         
         const blob = new Blob([reportHTML], { type: "application/msword" });
@@ -575,7 +624,7 @@
         a.download = `US_Fiber_Net_Report_${currentMonth}_${currentYear}.doc`;
         a.click();
         URL.revokeObjectURL(a.href);
-        showNotification("Professional report downloaded!");
+        showNotification("Report downloaded!");
     }
     
     function generateReceiptForEdit() {
@@ -585,14 +634,51 @@
         return cust;
     }
     
-    function handleSMS() { const cust = generateReceiptForEdit(); if(cust && cust.phone) { const msg = `US FIBER NET\nReceipt: ${cust.token}\nPaid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`; window.location.href = `sms:${cust.phone}?body=${encodeURIComponent(msg)}`; showNotification("SMS opened"); } else showNotification("Phone missing or edit a customer", true); }
-    function handleWhatsApp() { const cust = generateReceiptForEdit(); if(cust && cust.phone) { const msg = `⚡ US FIBER NET ⚡\nReceipt No: ${cust.token}\nAmount Paid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`; const phone = cust.phone.replace(/[^0-9+]/g, '').replace('+', ''); window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank'); showNotification("WhatsApp opened"); } else showNotification("Phone missing or edit a customer", true); }
+    function handleSMS() { const cust = generateReceiptForEdit(); if(cust && cust.phone) { const msg = `US FIBER NET\nReceipt: ${cust.token}\nPaid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`; window.location.href = `sms:${cust.phone}?body=${encodeURIComponent(msg)}`; showNotification("SMS opened"); } else showNotification("Phone missing", true); }
+    function handleWhatsApp() { const cust = generateReceiptForEdit(); if(cust && cust.phone) { const msg = `⚡ US FIBER NET ⚡\nReceipt: ${cust.token}\nPaid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`; const phone = cust.phone.replace(/[^0-9+]/g, '').replace('+', ''); window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank'); showNotification("WhatsApp opened"); } else showNotification("Phone missing", true); }
     
     function backupJSON() { const backup = { data, users, backupDate: new Date().toISOString() }; const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `US_Fiber_Backup_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`; a.click(); showNotification("Backup saved"); }
-    function restoreData(file) { const reader = new FileReader(); reader.onload = e => { try { const j = JSON.parse(e.target.result); if(j.data) { data = j.data; if(j.users) { users = j.users; saveUsers(); } data.forEach(d => { if(d.isNextMonthPending === undefined) d.isNextMonthPending = false; if(!d.token) d.token = ""; if(!d.receivedBy) d.receivedBy = ""; if(!d.lastUpdated) d.lastUpdated = ""; if(d.pending === undefined) d.pending = d.fees - d.received; }); saveToLocalStorage(); refreshTable(); showNotification("Restored & cloud sync started"); } } catch(err) { showNotification("Invalid file", true); } }; reader.readAsText(file); }
-    function loadFromLocalStorage() { const saved = localStorage.getItem(STORAGE_KEY); if(saved) { data = JSON.parse(saved); data.forEach(d => { if(d.isNextMonthPending === undefined) d.isNextMonthPending = false; if(!d.token) d.token = ""; if(!d.receivedBy) d.receivedBy = ""; if(!d.lastUpdated) d.lastUpdated = ""; if(d.pending === undefined) d.pending = d.fees - d.received; }); } else { data = []; } refreshTable(); }
     
-    // Event Bindings (abbreviated but fully functional)
+    function restoreData(file) { 
+        const reader = new FileReader(); 
+        reader.onload = e => { 
+            try { 
+                const j = JSON.parse(e.target.result); 
+                if(j.data) { 
+                    data = j.data; 
+                    if(j.users) { users = j.users; saveUsers(); } 
+                    data.forEach(d => { 
+                        if(d.isNextMonthPending === undefined) d.isNextMonthPending = false; 
+                        if(!d.token) d.token = ""; 
+                        if(!d.receivedBy) d.receivedBy = ""; 
+                        if(!d.lastUpdated) d.lastUpdated = ""; 
+                        if(d.pending === undefined) d.pending = d.fees - d.received; 
+                    }); 
+                    saveToLocalStorage(); 
+                    refreshTable(); 
+                    showNotification("Restored " + data.length + " customers & synced to cloud!"); 
+                } 
+            } catch(err) { showNotification("Invalid file", true); } 
+        }; 
+        reader.readAsText(file); 
+    }
+    
+    function loadFromLocalStorage() { 
+        const saved = localStorage.getItem(STORAGE_KEY); 
+        if(saved) { 
+            data = JSON.parse(saved); 
+            data.forEach(d => { 
+                if(d.isNextMonthPending === undefined) d.isNextMonthPending = false; 
+                if(!d.token) d.token = ""; 
+                if(!d.receivedBy) d.receivedBy = ""; 
+                if(!d.lastUpdated) d.lastUpdated = ""; 
+                if(d.pending === undefined) d.pending = d.fees - d.received; 
+            }); 
+        } else { data = []; } 
+        refreshTable(); 
+    }
+    
+    // Event Bindings
     document.getElementById('dataForm').addEventListener('submit', (e) => { e.preventDefault(); if(editingIndex === -1) addNewEntry(); else updateEntryFromEdit(); });
     document.getElementById('updateBtn').onclick = updateEntryFromEdit;
     document.getElementById('cancelBtn').onclick = cancelEditMode;
@@ -609,17 +695,17 @@
     document.getElementById('allResetBtn').onclick = allResetSpecial;
     document.getElementById('resetDefaultPasswordBtn').onclick = () => { const admin = users.find(u => u.username === 'admin'); if(admin) admin.password = "admin123"; saveUsers(); showNotification("Admin password reset to admin123"); };
     document.getElementById('doSearchBtn').onclick = () => { activeSearch.field = document.getElementById('searchField').value; activeSearch.value = document.getElementById('searchValue').value; refreshTable(); };
-    document.getElementById('clearSearchBtn').onclick = () => { activeSearch = { field: "", value: "" }; document.getElementById('searchValue').value = ""; refreshTable(); showNotification("Search cleared"); };
+    document.getElementById('clearSearchBtn').onclick = clearSearch;
     document.getElementById('searchValue').addEventListener('keypress', e => { if(e.key === 'Enter') document.getElementById('doSearchBtn').click(); });
     document.getElementById('filterTypeSelect').addEventListener('change', () => { updateFilterUI(); activeFilter = { type: "", value: "" }; refreshTable(); });
-    document.getElementById('doFilterBtn').onclick = () => { const filterType = document.getElementById('filterTypeSelect').value; const filterValue = getFilterValue(); if(!filterValue || filterValue === "") { showNotification("Please select/enter a value", true); return; } activeFilter = { type: filterType, value: filterValue }; refreshTable(); showNotification(`Filter applied: ${filterType} = ${filterValue}`); };
-    document.getElementById('clearFilterBtn').onclick = () => { activeFilter = { type: "", value: "" }; document.getElementById('filterTypeSelect').value = "pending"; updateFilterUI(); refreshTable(); showNotification("All filters cleared"); };
+    document.getElementById('doFilterBtn').onclick = applyFilter;
+    document.getElementById('clearFilterBtn').onclick = clearFilter;
     document.getElementById('setupSheetBtn').onclick = () => { document.getElementById('sheetWebAppUrl').value = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL; document.getElementById('sheetModal').style.display = 'flex'; document.getElementById('dropdownMenu').classList.remove('show'); };
     document.getElementById('saveSheetSettings').onclick = async () => { await testGoogleSheet(); document.getElementById('sheetModal').style.display = 'none'; };
     document.getElementById('closeSheetModal').onclick = () => document.getElementById('sheetModal').style.display = 'none';
     document.getElementById('manualSyncBtn').onclick = async () => { await loadFromGoogleSheet(); };
     
-    // User Management - ONLY ADMIN CAN SEE
+    // User Management
     document.getElementById('userManagementBtn').onclick = () => {
         if(!currentUser?.isAdmin) { showNotification("Only admin can access user management", true); return; }
         const container = document.getElementById('userListContainer');
@@ -654,7 +740,7 @@
             document.getElementById('userManagementBtn').style.display = user.isAdmin ? 'block' : 'none';
             loadFromLocalStorage();
             setTimeout(() => { loadFromGoogleSheet(); }, 500);
-            showNotification("Welcome " + username + "! Auto cloud sync active.");
+            showNotification("Welcome " + username + "!");
         } else {
             document.getElementById('loginMessage').style.display = 'block';
         }
@@ -666,8 +752,21 @@
     const menuBtn = document.getElementById('menuBtn'), dropdown = document.getElementById('dropdownMenu');
     menuBtn.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); };
     window.onclick = (e) => { if(menuBtn && dropdown && !menuBtn.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('show'); };
-    document.getElementById('searchPanelBtn').onclick = () => { document.getElementById('searchPanel').classList.toggle('active'); document.getElementById('filterPanel').classList.remove('active'); dropdown.classList.remove('show'); };
-    document.getElementById('filterPanelBtn').onclick = () => { document.getElementById('filterPanel').classList.toggle('active'); document.getElementById('searchPanel').classList.remove('active'); dropdown.classList.remove('show'); setTimeout(() => updateFilterUI(), 50); };
+    
+    const searchPanel = document.getElementById('searchPanel');
+    const filterPanel = document.getElementById('filterPanel');
+    
+    document.getElementById('searchPanelBtn').onclick = () => {
+        searchPanel.classList.toggle('active');
+        filterPanel.classList.remove('active');
+        dropdown.classList.remove('show');
+    };
+    document.getElementById('filterPanelBtn').onclick = () => {
+        filterPanel.classList.toggle('active');
+        searchPanel.classList.remove('active');
+        dropdown.classList.remove('show');
+        setTimeout(() => updateFilterUI(), 50);
+    };
     
     function checkAuth() {
         loadUsers();
