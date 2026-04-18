@@ -58,6 +58,9 @@
         .sync-status.success { background: #2e7d3220; color: #8effa0; }
         .sync-status.loading { background: #ff980020; color: #ffaa66; }
         .sync-status.error { background: #d32f2f20; color: #ffaa88; }
+        .select-all-row { background: #1e4a6e; margin-bottom: 10px; padding: 8px 12px; border-radius: 12px; display: flex; align-items: center; gap: 10px; }
+        .select-all-row input { width: auto; margin: 0; }
+        .select-all-row label { margin: 0; cursor: pointer; }
         @media (max-width: 1000px) { .left-section, .table-section { min-width: 100%; } }
     </style>
 </head>
@@ -85,7 +88,7 @@
                     <button id="filterPanelBtn">⚙️ Filter Panel</button>
                     <button id="backupJsonBtn">📁 Backup (JSON)</button>
                     <button id="restoreBtn">📂 Restore Data</button>
-                    <button id="reportBtn">📊 Monthly Report</button>
+                    <button id="reportBtn">📊 Professional Report (DOC)</button>
                     <button id="setupSheetBtn">📎 Setup Google Sheets</button>
                     <button id="manualSyncBtn">☁️ Manual Sync from Cloud</button>
                     <button id="userManagementBtn" style="display:none;">👥 User Management</button>
@@ -144,9 +147,26 @@
             </div>
         </div>
         <div class="table-section">
-            <div style="display:flex; justify-content:space-between; flex-wrap:wrap;"><h2>Customer Records</h2><div id="tableActionButtons" style="display:none; gap:8px;"><span id="selectionCountText" style="background:#0099cc40; padding:6px 16px; border-radius:30px;">0 selected</span><button id="tableDeleteBtn" class="delete-btn">Delete</button><button id="tableResetCustomerBtn" class="reset-customer-btn">Reset Payment</button><button id="tableNextMonthBtn" class="next-month-mark-btn">Next Month</button><button id="tableUnmarkNextMonthBtn" style="background:#ff9800;">Remove Mark</button></div></div>
-            <div class="select-all-container" style="margin-bottom:10px;"><input type="checkbox" id="selectAllCheckbox"><label> Select All</label></div>
-            <div style="overflow-x:auto;"><table id="dataTable"><thead><tr><th></th><th>Day</th><th>Name</th><th>Phone</th><th>Fees</th><th>Received</th><th>Pending</th><th>Receipt No.</th><th>Agent/Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="tableBody"></tbody></table></div>
+            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; align-items:center; margin-bottom:15px;">
+                <h2>Customer Records</h2>
+                <div id="tableActionButtons" style="display:none; gap:8px; flex-wrap:wrap;">
+                    <span id="selectionCountText" style="background:#0099cc40; padding:6px 16px; border-radius:30px;">0 selected</span>
+                    <button id="tableDeleteBtn" class="delete-btn">Delete</button>
+                    <button id="tableResetCustomerBtn" class="reset-customer-btn">Reset Payment</button>
+                    <button id="tableNextMonthBtn" class="next-month-mark-btn">Next Month</button>
+                    <button id="tableUnmarkNextMonthBtn" style="background:#ff9800;">Remove Mark</button>
+                </div>
+            </div>
+            <div class="select-all-row">
+                <input type="checkbox" id="selectAllCheckbox">
+                <label for="selectAllCheckbox">✅ Select All Customers</label>
+            </div>
+            <div style="overflow-x:auto;">
+                <table id="dataTable">
+                    <thead><tr><th></th><th>Day</th><th>Name</th><th>Phone</th><th>Fees</th><th>Received</th><th>Pending</th><th>Receipt No.</th><th>Agent/Date</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -154,67 +174,25 @@
 <div class="modal" id="sheetModal" style="display:none;">
     <div class="modal-content" style="max-width:500px;">
         <h2>📎 Google Sheets Setup</h2>
-        <p style="margin-bottom:15px;">Web App URL already configured for auto sync. You can change if needed.</p>
+        <p style="margin-bottom:15px;">Web App URL already configured. You can change if needed.</p>
         <div class="form-group"><label>Web App URL</label><input type="text" id="sheetWebAppUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
         <button id="saveSheetSettings">Save & Test</button>
         <button id="closeSheetModal" style="background:#666; margin-top:10px;">Close</button>
-        <hr style="margin:15px 0;">
-        <details><summary>📋 Apps Script Code (Copy paste karein)</summary>
-        <pre style="background:#1e2a2f; padding:10px; border-radius:10px; font-size:11px; overflow-x:auto;">
-function doPost(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const data = JSON.parse(e.postData.contents);
-  if(sheet.getLastRow() === 0) {
-    sheet.appendRow(["Timestamp","Serial","Name","Phone","Fees","Received","Pending","Day","Receipt","Agent","Status","LastUpdated"]);
-  }
-  data.forEach(c => {
-    sheet.appendRow([new Date().toLocaleString(),c.serial,c.name,c.phone,c.fees,c.received,c.pending,c.day,c.token,c.receivedBy,c.isNextMonthPending?"Next Month":"Current",c.lastUpdated]);
-  });
-  return ContentService.createTextOutput(JSON.stringify({status:"success"}));
-}
-function doGet() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const lastRow = sheet.getLastRow();
-  if(lastRow <= 1) return ContentService.createTextOutput(JSON.stringify({status:"empty",data:[]}));
-  const values = sheet.getRange(2,1,lastRow-1,12).getValues();
-  const customers = [];
-  for(let i=0;i<values.length;i++){
-    customers.push({serial:values[i][1],name:values[i][2],phone:values[i][3],fees:values[i][4],received:values[i][5],pending:values[i][6],day:values[i][7],token:values[i][8],receivedBy:values[i][9],isNextMonthPending:values[i][10]==="Next Month",lastUpdated:values[i][11]});
-  }
-  const unique = [];
-  const seen = new Set();
-  for(let i=customers.length-1;i>=0;i--){
-    if(!seen.has(customers[i].serial)){
-      seen.add(customers[i].serial);
-      unique.unshift(customers[i]);
-    }
-  }
-  return ContentService.createTextOutput(JSON.stringify({status:"success",data:unique,count:unique.length}));
-}
-        </pre>
-        </details>
     </div>
 </div>
 
-<div class="modal" id="userModal" style="display:none;"><div class="modal-content"><h2>Users</h2><div class="form-group"><label>New Username</label><input id="newUsername"></div><div class="form-group"><label>Password</label><input type="password" id="newUserPassword"></div><button id="createUserBtn">Create</button><h3>Existing</h3><div id="userListContainer"></div><button id="closeUserModalBtn">Close</button></div></div>
+<div class="modal" id="userModal" style="display:none;"><div class="modal-content"><h2>👥 User Management</h2><div class="form-group"><label>New Username</label><input id="newUsername"></div><div class="form-group"><label>Password</label><input type="password" id="newUserPassword"></div><button id="createUserBtn">Create User</button><h3 style="margin-top:15px;">Existing Users</h3><div id="userListContainer"></div><button id="closeUserModalBtn" style="margin-top:15px;">Close</button></div></div>
 <div class="modal" id="passwordModal" style="display:none;"><div class="modal-content"><h2>Change Password</h2><div class="form-group"><label>Current</label><input type="password" id="currentPassword"></div><div class="form-group"><label>New</label><input type="password" id="newPassword"></div><div class="form-group"><label>Confirm</label><input type="password" id="confirmPassword"></div><button id="savePasswordBtn">Save</button><button id="cancelPasswordBtn">Cancel</button></div></div>
 
 <script>
-    // ============================================================
-    // PRE-CONFIGURED GOOGLE SHEETS URL - AUTO CLOUD SYNC READY
-    // ============================================================
     const DEFAULT_GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzPwl0NcH-BPr9aAkpdG7SIpDSdty8GQTmdg2huVRiucGuCgCqX8FmtstusWbZ96bw/exec";
-    
     let data = [], editingIndex = -1, editingCustomerSerial = null, selectedRowsSet = new Set(), currentUser = null, users = [];
     let activeSearch = { field: "", value: "" };
     let activeFilter = { type: "", value: "" };
     let googleSheetUrl = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
-    const STORAGE_KEY = "usFiberNetV11", USERS_KEY = "usFiberNetUsers";
+    const STORAGE_KEY = "usFiberNetV14", USERS_KEY = "usFiberNetUsers";
     
-    // Save pre-configured URL if not exists
-    if(!localStorage.getItem("googleSheetUrl")) {
-        localStorage.setItem("googleSheetUrl", DEFAULT_GOOGLE_SHEET_URL);
-    }
+    if(!localStorage.getItem("googleSheetUrl")) localStorage.setItem("googleSheetUrl", DEFAULT_GOOGLE_SHEET_URL);
     
     function showNotification(msg, isError = false) {
         const n = document.getElementById('notification');
@@ -231,82 +209,41 @@ function doGet() {
     function generateReceiptNumber() { return "USF-" + new Date().getFullYear() + String(Math.floor(Math.random() * 9999)).padStart(4,'0'); }
     function formatAmount(amt) { return amt.toFixed(2); }
     
-    // Auto Sync to Google Sheets (POST) - Silent background
     async function autoSyncToGoogleSheet() {
         const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
-        if(!url || url === "") return;
-        if(!data.length) return;
-        try {
-            await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            const syncDiv = document.getElementById('syncStatus');
-            if(syncDiv) {
-                syncDiv.innerHTML = '✅ Cloud sync active | Last saved: ' + new Date().toLocaleTimeString();
-                syncDiv.className = 'sync-status success';
-            }
-        } catch(err) { console.error("Auto sync error:", err); }
+        if(!url || url === "" || !data.length) return;
+        try { await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); } catch(err) { console.error("Auto sync error:", err); }
     }
     
-    // Load from Google Sheets (GET) - Auto on Login & Manual
     async function loadFromGoogleSheet() {
         const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
-        if(!url || url === "") {
-            const syncDiv = document.getElementById('syncStatus');
-            if(syncDiv) {
-                syncDiv.innerHTML = '⚠️ Google Sheets not configured. Using local storage.';
-                syncDiv.className = 'sync-status error';
-            }
-            return false;
-        }
-        
+        if(!url || url === "") { const sd = document.getElementById('syncStatus'); if(sd){ sd.innerHTML = '⚠️ Google Sheets not configured.'; sd.className = 'sync-status error'; } return false; }
         const syncDiv = document.getElementById('syncStatus');
-        if(syncDiv) {
-            syncDiv.innerHTML = '🔄 Loading data from cloud...';
-            syncDiv.className = 'sync-status loading';
-        }
-        
+        if(syncDiv) { syncDiv.innerHTML = '🔄 Loading data from cloud...'; syncDiv.className = 'sync-status loading'; }
         try {
             const response = await fetch(url);
             const result = await response.json();
-            
-            if(result.status === "success" && result.data && Array.isArray(result.data)) {
-                if(result.data.length > 0) {
-                    data = result.data;
-                    data.forEach(d => {
-                        if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
-                        if(!d.token) d.token = "";
-                        if(!d.receivedBy) d.receivedBy = "";
-                        if(!d.lastUpdated) d.lastUpdated = new Date().toLocaleString();
-                        if(d.pending === undefined) d.pending = (d.fees || 0) - (d.received || 0);
-                        if(!d.serial) d.serial = Math.floor(Math.random() * 10000) + 1;
-                    });
-                    saveToLocalStorage();
-                    refreshTable();
-                    if(syncDiv) {
-                        syncDiv.innerHTML = '✅ Cloud sync active | Loaded ' + data.length + ' customers | Last sync: ' + new Date().toLocaleTimeString();
-                        syncDiv.className = 'sync-status success';
-                    }
-                    showNotification('✅ Loaded ' + data.length + ' customers from cloud!');
-                    return true;
-                } else {
-                    if(syncDiv) {
-                        syncDiv.innerHTML = '📭 No data in cloud. Add customers to start syncing.';
-                        syncDiv.className = 'sync-status error';
-                    }
-                    return false;
-                }
+            if(result.status === "success" && result.data && Array.isArray(result.data) && result.data.length > 0) {
+                data = result.data;
+                data.forEach(d => {
+                    if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
+                    if(!d.token) d.token = "";
+                    if(!d.receivedBy) d.receivedBy = "";
+                    if(!d.lastUpdated) d.lastUpdated = new Date().toLocaleString();
+                    if(d.pending === undefined) d.pending = (d.fees || 0) - (d.received || 0);
+                    if(!d.serial) d.serial = Math.floor(Math.random() * 10000) + 1;
+                });
+                saveToLocalStorage();
+                refreshTable();
+                if(syncDiv) { syncDiv.innerHTML = '✅ Loaded ' + data.length + ' customers | ' + new Date().toLocaleTimeString(); syncDiv.className = 'sync-status success'; }
+                showNotification('✅ Loaded ' + data.length + ' customers from cloud!');
+                return true;
             } else {
-                if(syncDiv) {
-                    syncDiv.innerHTML = '⚠️ Cloud returned empty. Add new customers.';
-                    syncDiv.className = 'sync-status error';
-                }
+                if(syncDiv) { syncDiv.innerHTML = '📭 No cloud data. Add customers to start syncing.'; syncDiv.className = 'sync-status error'; }
                 return false;
             }
         } catch(err) {
-            if(syncDiv) {
-                syncDiv.innerHTML = '⚠️ Cloud connection issue. Check URL or internet.';
-                syncDiv.className = 'sync-status error';
-            }
-            console.error("Load error:", err);
+            if(syncDiv) { syncDiv.innerHTML = '⚠️ Cloud connection issue.'; syncDiv.className = 'sync-status error'; }
             return false;
         }
     }
@@ -315,8 +252,7 @@ function doGet() {
         const url = document.getElementById('sheetWebAppUrl').value;
         if(!url) { showNotification("Enter Web App URL", true); return false; }
         localStorage.setItem("googleSheetUrl", url);
-        googleSheetUrl = url;
-        showNotification("Settings saved! Loading data from cloud...");
+        showNotification("Settings saved! Loading data...");
         await loadFromGoogleSheet();
         return true;
     }
@@ -326,7 +262,6 @@ function doGet() {
         const container = document.getElementById('filterValueContainer');
         const agents = [...new Set(data.map(c => c.receivedBy).filter(a => a && a.trim()))];
         const days = [1,5,10,15,20,25,30,31];
-        
         if(filterType === 'agent') {
             container.innerHTML = `<label>Select Agent</label><select id="filterValueSelect"><option value="">All Agents</option>${agents.map(a => `<option value="${a}">${a}</option>`).join('')}</select>`;
         } else if(filterType === 'day') {
@@ -344,18 +279,6 @@ function doGet() {
         }
         const input = document.getElementById('filterValueInput');
         return input ? input.value : "";
-    }
-    
-    function applyFilter() {
-        const filterType = document.getElementById('filterTypeSelect').value;
-        const filterValue = getFilterValue();
-        if(!filterValue || filterValue === "") {
-            showNotification("Please select/enter a value to filter", true);
-            return;
-        }
-        activeFilter = { type: filterType, value: filterValue };
-        refreshTable();
-        showNotification(`Filter applied: ${filterType} = ${filterValue}`);
     }
     
     function applyFiltersToData(filteredData) {
@@ -396,47 +319,29 @@ function doGet() {
         tbody.innerHTML = "";
         let filtered = applySearchFilter([...data]);
         filtered = applyFiltersToData(filtered);
-        
         if(filtered.length === 0) {
-            const row = tbody.insertRow();
-            const cell = row.insertCell(0);
-            cell.colSpan = 11;
-            cell.innerHTML = '🔍 No records found';
-            cell.style.textAlign = 'center';
-            cell.style.padding = '40px';
-            updateDashboard();
-            return;
+            const row = tbody.insertRow(); const cell = row.insertCell(0);
+            cell.colSpan = 11; cell.innerHTML = '🔍 No records found'; cell.style.textAlign = 'center'; cell.style.padding = '40px';
+            updateDashboard(); return;
         }
-        
         filtered.forEach(entry => {
             const row = tbody.insertRow();
             const chkCell = row.insertCell(0);
-            const cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.className = 'row-selector';
-            cb.dataset.serial = entry.serial;
-            cb.checked = selectedRowsSet.has(entry.serial);
-            cb.addEventListener('change', () => {
-                if(cb.checked) selectedRowsSet.add(entry.serial);
-                else selectedRowsSet.delete(entry.serial);
-                updateSelectedStats();
-            });
+            const cb = document.createElement('input'); cb.type='checkbox'; cb.className='row-selector'; cb.dataset.serial=entry.serial; cb.checked=selectedRowsSet.has(entry.serial);
+            cb.addEventListener('change', () => { if(cb.checked) selectedRowsSet.add(entry.serial); else selectedRowsSet.delete(entry.serial); updateSelectedStats(); });
             chkCell.appendChild(cb);
             row.insertCell(1).innerText = entry.day;
             row.insertCell(2).innerText = entry.name;
             row.insertCell(3).innerText = entry.phone || 'N/A';
             row.insertCell(4).innerText = formatAmount(entry.fees);
             row.insertCell(5).innerText = formatAmount(entry.received);
-            row.insertCell(6).innerHTML = '<span style="color:' + (entry.pending > 0 ? '#ffaa77' : '#8effa0') + '">' + formatAmount(entry.pending) + '</span>';
+            row.insertCell(6).innerHTML = '<span style="color:'+(entry.pending>0?'#ffaa77':'#8effa0')+'">'+formatAmount(entry.pending)+'</span>';
             row.insertCell(7).innerHTML = entry.token ? entry.token : '<span style="color:#ffaa66;">No Receipt</span>';
-            const agentDate = entry.receivedBy ? entry.receivedBy + '<br/><small>' + (entry.lastUpdated?.split(',')[0] || '') + '</small>' : '—';
-            row.insertCell(8).innerHTML = '<small>' + agentDate + '</small>';
+            const agentDate = entry.receivedBy ? entry.receivedBy + '<br/><small>'+(entry.lastUpdated?.split(',')[0]||'')+'</small>' : '—';
+            row.insertCell(8).innerHTML = '<small>'+agentDate+'</small>';
             row.insertCell(9).innerHTML = entry.isNextMonthPending ? '<span class="badge-next">Next Month</span>' : '<span>Current</span>';
             const actionCell = row.insertCell(10);
-            const editBtn = document.createElement('button');
-            editBtn.innerText = 'Edit';
-            editBtn.className = 'edit-btn';
-            editBtn.style.padding = '5px 12px';
+            const editBtn = document.createElement('button'); editBtn.innerText='Edit'; editBtn.className='edit-btn'; editBtn.style.padding='5px 12px';
             editBtn.onclick = () => {
                 const idx = data.findIndex(d => d.serial === entry.serial);
                 if(idx !== -1) {
@@ -446,13 +351,13 @@ function doGet() {
                     document.getElementById('fees').value = eData.fees;
                     document.getElementById('received').value = eData.received === 0 ? '' : eData.received;
                     document.getElementById('day').value = eData.day;
-                    editingIndex = idx;
-                    editingCustomerSerial = entry.serial;
+                    editingIndex = idx; editingCustomerSerial = entry.serial;
                     document.getElementById('addBtn').style.display = 'none';
                     document.getElementById('editActionGroup').style.display = 'flex';
                     document.getElementById('editingBadge').style.display = 'inline-block';
-                    document.getElementById('customerDetails').innerHTML = `<div><strong>${eData.name}</strong><br/>📞 Phone: ${eData.phone || 'N/A'}<br/>💰 Fees: ${formatAmount(eData.fees)}<br/>💵 Received: ${formatAmount(eData.received)}<br/>📌 Pending: ${formatAmount(eData.pending)}<br/>📅 Due Day: ${eData.day}<br/>🧾 Receipt: ${eData.token || 'None'}<br/>👤 Agent: ${eData.receivedBy || '-'}<br/>📆 Last: ${eData.lastUpdated || '-'}<br/>${eData.isNextMonthPending ? '⏩ Next Month Pending' : '✅ Current'}</div>`;
+                    document.getElementById('customerDetails').innerHTML = `<div><strong>${eData.name}</strong><br/>📞 Phone: ${eData.phone||'N/A'}<br/>💰 Fees: ${formatAmount(eData.fees)}<br/>💵 Received: ${formatAmount(eData.received)}<br/>📌 Pending: ${formatAmount(eData.pending)}<br/>📅 Due Day: ${eData.day}<br/>🧾 Receipt: ${eData.token||'None'}<br/>👤 Agent: ${eData.receivedBy||'-'}<br/>📆 Last: ${eData.lastUpdated||'-'}<br/>${eData.isNextMonthPending ? '⏩ Next Month Pending' : '✅ Current'}</div>`;
                     refreshTable();
+                    setTimeout(() => { document.getElementById('received').focus(); }, 100);
                 }
             };
             actionCell.appendChild(editBtn);
@@ -468,17 +373,28 @@ function doGet() {
         document.getElementById('pendingCustomersCount').innerText = all.filter(c => c.pending > 0 && !c.isNextMonthPending).length;
         document.getElementById('receivedCustomersCount').innerText = all.filter(c => c.received > 0 && !c.isNextMonthPending).length;
         document.getElementById('nextMonthCustomersCount').innerText = all.filter(c => c.isNextMonthPending).length;
-        document.getElementById('totalFeesAmount').innerText = formatAmount(all.reduce((s, c) => s + (c.fees || 0), 0));
-        document.getElementById('pendingFeesAmount').innerText = formatAmount(all.filter(c => !c.isNextMonthPending).reduce((s, c) => s + (c.pending || 0), 0));
-        document.getElementById('receivedFeesAmount').innerText = formatAmount(all.filter(c => !c.isNextMonthPending).reduce((s, c) => s + (c.received || 0), 0));
-        document.getElementById('nextMonthFeesAmount').innerText = formatAmount(all.filter(c => c.isNextMonthPending).reduce((s, c) => s + (c.fees || 0), 0));
+        document.getElementById('totalFeesAmount').innerText = formatAmount(all.reduce((s,c)=>s+(c.fees||0),0));
+        document.getElementById('pendingFeesAmount').innerText = formatAmount(all.filter(c=>!c.isNextMonthPending).reduce((s,c)=>s+(c.pending||0),0));
+        document.getElementById('receivedFeesAmount').innerText = formatAmount(all.filter(c=>!c.isNextMonthPending).reduce((s,c)=>s+(c.received||0),0));
+        document.getElementById('nextMonthFeesAmount').innerText = formatAmount(all.filter(c=>c.isNextMonthPending).reduce((s,c)=>s+(c.fees||0),0));
     }
     
     function updateSelectedStats() {
         document.getElementById('selectionCountText').innerText = selectedRowsSet.size + ' selected';
         document.getElementById('tableActionButtons').style.display = selectedRowsSet.size > 0 ? "flex" : "none";
-        document.getElementById('selectAllCheckbox').checked = (selectedRowsSet.size === data.length && data.length > 0);
+        const selectAllChk = document.getElementById('selectAllCheckbox');
+        if(selectAllChk) selectAllChk.checked = (selectedRowsSet.size === data.length && data.length > 0);
     }
+    
+    document.getElementById('selectAllCheckbox').addEventListener('change', (e) => {
+        document.querySelectorAll('.row-selector').forEach(cb => {
+            cb.checked = e.target.checked;
+            const s = parseInt(cb.dataset.serial);
+            if(e.target.checked) selectedRowsSet.add(s);
+            else selectedRowsSet.delete(s);
+        });
+        updateSelectedStats();
+    });
     
     function addNewEntry() {
         const name = document.getElementById('name').value.trim();
@@ -492,11 +408,8 @@ function doGet() {
         const pending = fees - received;
         const newSerial = data.length > 0 ? Math.max(...data.map(d => d.serial)) + 1 : 1;
         data.push({ serial: newSerial, name, phone, fees, received, pending, day, token: "", isNextMonthPending: false, receivedBy: currentUser?.username || "unknown", lastUpdated: new Date().toLocaleString() });
-        saveToLocalStorage();
-        refreshTable();
-        showNotification("Customer added & synced to cloud");
-        document.getElementById('dataForm').reset();
-        document.getElementById('received').value = '';
+        saveToLocalStorage(); refreshTable(); showNotification("Customer added & synced to cloud");
+        document.getElementById('dataForm').reset(); document.getElementById('received').value = '';
     }
     
     function updateEntryFromEdit() {
@@ -510,15 +423,11 @@ function doGet() {
         if(!name || !day) return;
         const pending = fees - received;
         data[editingIndex] = { ...data[editingIndex], name, phone, fees, received, pending, day, lastUpdated: new Date().toLocaleString(), receivedBy: currentUser?.username };
-        saveToLocalStorage();
-        cancelEditMode();
-        refreshTable();
-        showNotification("Updated & synced");
+        saveToLocalStorage(); cancelEditMode(); refreshTable(); showNotification("Updated & synced");
     }
     
     function cancelEditMode() {
-        editingIndex = -1;
-        editingCustomerSerial = null;
+        editingIndex = -1; editingCustomerSerial = null;
         document.getElementById('addBtn').style.display = 'block';
         document.getElementById('editActionGroup').style.display = 'none';
         document.getElementById('editingBadge').style.display = 'none';
@@ -534,34 +443,20 @@ function doGet() {
             data = data.filter(d => !selectedRowsSet.has(d.serial));
             if(editingCustomerSerial && selectedRowsSet.has(editingCustomerSerial)) cancelEditMode();
             selectedRowsSet.clear();
-            saveToLocalStorage();
-            refreshTable();
-            showNotification("Deleted & cloud updated");
+            saveToLocalStorage(); refreshTable(); showNotification("Deleted & cloud updated");
         }
     }
     
     function markSelectedAsNextMonth() {
         if(selectedRowsSet.size === 0) return;
-        Array.from(selectedRowsSet).forEach(s => {
-            const idx = data.findIndex(d => d.serial === s);
-            if(idx !== -1) data[idx].isNextMonthPending = true;
-        });
-        selectedRowsSet.clear();
-        saveToLocalStorage();
-        refreshTable();
-        showNotification("Marked Next Month & synced");
+        Array.from(selectedRowsSet).forEach(s => { const idx = data.findIndex(d => d.serial === s); if(idx !== -1) data[idx].isNextMonthPending = true; });
+        selectedRowsSet.clear(); saveToLocalStorage(); refreshTable(); showNotification("Marked Next Month");
     }
     
     function unmarkSelectedFromNextMonth() {
         if(selectedRowsSet.size === 0) return;
-        Array.from(selectedRowsSet).forEach(s => {
-            const idx = data.findIndex(d => d.serial === s);
-            if(idx !== -1) data[idx].isNextMonthPending = false;
-        });
-        selectedRowsSet.clear();
-        saveToLocalStorage();
-        refreshTable();
-        showNotification("Unmarked & synced");
+        Array.from(selectedRowsSet).forEach(s => { const idx = data.findIndex(d => d.serial === s); if(idx !== -1) data[idx].isNextMonthPending = false; });
+        selectedRowsSet.clear(); saveToLocalStorage(); refreshTable(); showNotification("Unmarked");
     }
     
     function resetCustomerSelected() {
@@ -569,31 +464,118 @@ function doGet() {
         if(confirm("Reset payment for " + selectedRowsSet.size + " customers?")) {
             selectedRowsSet.forEach(serial => {
                 const idx = data.findIndex(d => d.serial === serial);
-                if(idx !== -1) {
-                    data[idx].token = "";
-                    data[idx].received = 0;
-                    data[idx].pending = data[idx].fees;
-                    data[idx].receivedBy = "";
-                    data[idx].lastUpdated = "";
-                }
+                if(idx !== -1) { data[idx].token = ""; data[idx].received = 0; data[idx].pending = data[idx].fees; data[idx].receivedBy = ""; data[idx].lastUpdated = ""; }
             });
-            saveToLocalStorage();
-            refreshTable();
-            selectedRowsSet.clear();
-            showNotification("Reset completed & synced");
+            saveToLocalStorage(); refreshTable(); selectedRowsSet.clear(); showNotification("Reset completed");
         }
     }
     
     function allResetSpecial() {
         if(confirm("⚠️ ALL RESET SPECIAL:\n- Next Month customers: Pending amount DOUBLE\n- All become CURRENT\nProceed?")) {
-            data.forEach(c => {
-                if(c.isNextMonthPending) { c.pending = c.fees * 2; } else { c.pending = c.fees; }
-                c.received = 0; c.token = ""; c.receivedBy = ""; c.lastUpdated = ""; c.isNextMonthPending = false;
-            });
-            saveToLocalStorage();
-            refreshTable();
-            showNotification("Special reset completed & synced");
+            data.forEach(c => { if(c.isNextMonthPending) { c.pending = c.fees * 2; } else { c.pending = c.fees; } c.received = 0; c.token = ""; c.receivedBy = ""; c.lastUpdated = ""; c.isNextMonthPending = false; });
+            saveToLocalStorage(); refreshTable(); showNotification("Special reset completed");
         }
+    }
+    
+    // Professional Report - Fixed Table Width Issue (overflow:auto, responsive)
+    function generateProfessionalReport() {
+        const now = new Date();
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const currentMonth = monthNames[now.getMonth()];
+        const currentYear = now.getFullYear();
+        const currentCustomers = data.filter(c => !c.isNextMonthPending);
+        const nextMonthCustomers = data.filter(c => c.isNextMonthPending);
+        const totalFees = currentCustomers.reduce((s,c)=>s+c.fees,0);
+        const totalReceived = currentCustomers.reduce((s,c)=>s+c.received,0);
+        const totalPending = currentCustomers.reduce((s,c)=>s+c.pending,0);
+        const collectionRate = totalFees > 0 ? ((totalReceived/totalFees)*100).toFixed(2) : 0;
+        const nextMonthTotalFees = nextMonthCustomers.reduce((s,c)=>s+c.fees,0);
+        
+        const agentMap = new Map();
+        currentCustomers.forEach(c => { const agent = c.receivedBy && c.receivedBy.trim() ? c.receivedBy : "System"; agentMap.set(agent, (agentMap.get(agent)||0) + c.received); });
+        let agentRows = ""; for(let [agent, amt] of agentMap.entries()) agentRows += `<tr><td style="padding:8px; border:1px solid #ddd;">${agent}</td><td style="padding:8px; border:1px solid #ddd;">PKR ${formatAmount(amt)}</td></tr>`;
+        
+        const pendingList = currentCustomers.filter(c => c.pending > 0);
+        let pendingRows = ""; pendingList.forEach(c => { pendingRows += `<tr><td style="padding:8px; border:1px solid #ddd;">${c.name}</td><td style="padding:8px; border:1px solid #ddd;">${c.phone || 'N/A'}</td><td style="padding:8px; border:1px solid #ddd;">PKR ${formatAmount(c.fees)}</td><td style="padding:8px; border:1px solid #ddd;">PKR ${formatAmount(c.received)}</td><td style="padding:8px; border:1px solid #ddd; color:#ff9800; font-weight:bold;">PKR ${formatAmount(c.pending)}</td><td style="padding:8px; border:1px solid #ddd;">${c.day}</td><td style="padding:8px; border:1px solid #ddd;">${c.token || '—'}</td><td style="padding:8px; border:1px solid #ddd;">${c.receivedBy || '—'}<br/><small>${c.lastUpdated?.split(',')[0] || '—'}</small></td></tr>`; });
+        
+        const receivedList = currentCustomers.filter(c => c.received > 0);
+        let receivedRows = ""; receivedList.forEach(c => { receivedRows += `<tr><td style="padding:8px; border:1px solid #ddd;">${c.name}</td><td style="padding:8px; border:1px solid #ddd;">${c.phone || 'N/A'}</td><td style="padding:8px; border:1px solid #ddd;">PKR ${formatAmount(c.fees)}</td><td style="padding:8px; border:1px solid #ddd;">PKR ${formatAmount(c.received)}</td><td style="padding:8px; border:1px solid #ddd;">${c.token || '—'}</td><td style="padding:8px; border:1px solid #ddd;">${c.receivedBy || '—'}</td><td style="padding:8px; border:1px solid #ddd;">${c.lastUpdated?.split(',')[0] || '—'}</td></tr>`; });
+        
+        let nextMonthRows = ""; nextMonthCustomers.forEach(c => { nextMonthRows += `<tr><td style="padding:8px; border:1px solid #ddd;">${c.name}</td><td style="padding:8px; border:1px solid #ddd;">${c.phone || 'N/A'}</td><td style="padding:8px; border:1px solid #ddd;">PKR ${formatAmount(c.fees)}</td><td style="padding:8px; border:1px solid #ddd;">${c.day}</td><td style="padding:8px; border:1px solid #ddd;">${c.receivedBy || '—'}</td></tr>`; });
+        
+        const reportHTML = `<!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"><title>US Fiber Net - Monthly Report ${currentMonth} ${currentYear}</title>
+        <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; margin: 30px; background: white; color: #333; font-size: 12px; }
+            .header { text-align: center; border-bottom: 3px solid #0099cc; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { color: #0099cc; margin: 0; font-size: 28px; }
+            .header h2 { color: #666; margin: 10px 0 0; font-size: 18px; }
+            .summary-cards { display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
+            .card { background: #f5f5f5; border-radius: 12px; padding: 15px; flex: 1; min-width: 130px; text-align: center; border-left: 4px solid #0099cc; }
+            .card h3 { margin: 0 0 8px; font-size: 12px; color: #666; }
+            .card .value { font-size: 20px; font-weight: bold; color: #0099cc; }
+            .card.pending .value { color: #ff9800; }
+            .card.received .value { color: #4caf50; }
+            .card.next .value { color: #9c27b0; }
+            .table-container { overflow-x: auto; margin: 20px 0; }
+            table { width: 100%; border-collapse: collapse; min-width: 600px; }
+            th, td { border: 1px solid #ddd; padding: 10px 8px; text-align: left; vertical-align: top; }
+            th { background: #0099cc; color: white; font-weight: 600; white-space: nowrap; }
+            .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #999; border-top: 1px solid #ddd; padding-top: 20px; }
+            .section-title { color: #0099cc; border-left: 4px solid #0099cc; padding-left: 15px; margin: 25px 0 15px; font-size: 18px; }
+            @media print { body { margin: 0; padding: 10px; } .table-container { overflow-x: visible; } table { font-size: 10px; } }
+        </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>US Fiber Net</h1>
+                <h2>Monthly Collection Report - ${currentMonth} ${currentYear}</h2>
+                <p>Generated: ${now.toLocaleDateString()} at ${now.toLocaleTimeString()} | User: ${currentUser?.username || 'System'}</p>
+            </div>
+            <div class="summary-cards">
+                <div class="card"><h3>Total Customers</h3><div class="value">${currentCustomers.length}</div></div>
+                <div class="card"><h3>Total Fees</h3><div class="value">PKR ${formatAmount(totalFees)}</div></div>
+                <div class="card received"><h3>Total Collected</h3><div class="value">PKR ${formatAmount(totalReceived)}</div></div>
+                <div class="card pending"><h3>Total Pending</h3><div class="value">PKR ${formatAmount(totalPending)}</div></div>
+                <div class="card"><h3>Collection Rate</h3><div class="value">${collectionRate}%</div></div>
+                <div class="card next"><h3>Next Month Fees</h3><div class="value">PKR ${formatAmount(nextMonthTotalFees)}</div></div>
+            </div>
+            <h3 class="section-title">📊 Collection Summary</h3>
+            <div class="table-container">
+            <table><thead><tr><th>Description</th><th>Count</th><th>Amount (PKR)</th></tr></thead>
+            <tbody>
+                <tr><td>Total Monthly Fees</td><td>${currentCustomers.length}</td><td>${formatAmount(totalFees)}</td></tr>
+                <tr style="background:#e8f5e9;"><td>Amount Received</td><td>${currentCustomers.filter(c=>c.received>0).length} customers</td><td><strong>${formatAmount(totalReceived)}</strong></td></tr>
+                <tr style="background:#fff3e0;"><td>Pending Amount</td><td>${pendingList.length} customers</td><td><strong>${formatAmount(totalPending)}</strong></td></tr>
+                <tr><td>Fully Paid Customers</td><td>${currentCustomers.filter(c=>c.pending===0).length}</td><td>-</td></tr>
+                <tr><td>Partially Paid / Unpaid</td><td>${pendingList.length}</td><td>-</td></tr>
+                <tr><td>Next Month Customers</td><td>${nextMonthCustomers.length}</td><td>${formatAmount(nextMonthTotalFees)}</td></tr>
+            </tbody></table></div>
+            
+            <h3 class="section-title">👨‍💼 Agent Performance</h3>
+            <div class="table-container"><table><thead><tr><th>Agent Name</th><th>Amount Collected (PKR)</th></tr></thead><tbody>${agentRows || '<tr><td colspan="2">No data available</td></tr>'}</tbody></table></div>
+            
+            <h3 class="section-title">⚠️ Pending Customers (with Receipt & Agent Details)</h3>
+            <div class="table-container"><table><thead><tr><th>Customer Name</th><th>Phone</th><th>Monthly Fees</th><th>Received</th><th>Pending</th><th>Due Day</th><th>Receipt No.</th><th>Agent / Date</th></tr></thead><tbody>${pendingRows || '<tr><td colspan="8">No pending customers</td></tr>'}</tbody></table></div>
+            
+            <h3 class="section-title">✅ Received / Paid Customers</h3>
+            <div class="table-container"><table><thead><tr><th>Customer Name</th><th>Phone</th><th>Fees</th><th>Paid Amount</th><th>Receipt No.</th><th>Agent</th><th>Payment Date</th></tr></thead><tbody>${receivedRows || '<tr><td colspan="7">No received customers</td></tr>'}</tbody></table></div>
+            
+            <h3 class="section-title">⏩ Next Month Pending Customers</h3>
+            <div class="table-container"><table><thead><tr><th>Customer Name</th><th>Phone</th><th>Fees</th><th>Due Day</th><th>Marked By</th></tr></thead><tbody>${nextMonthRows || '<tr><td colspan="5">No next month customers</td></tr>'}</tbody></table></div>
+            
+            <div class="footer"><p>US Fiber Net - Smart Billing System | All amounts are in PKR</p></div>
+        </body>
+        </html>`;
+        
+        const blob = new Blob([reportHTML], { type: "application/msword" });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `US_Fiber_Net_Report_${currentMonth}_${currentYear}.doc`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showNotification("Professional report downloaded with complete details!");
     }
     
     function generateReceiptForEdit() {
@@ -603,77 +585,14 @@ function doGet() {
         return cust;
     }
     
-    function handleSMS() {
-        const cust = generateReceiptForEdit();
-        if(cust && cust.phone) {
-            const msg = `US FIBER NET\nReceipt: ${cust.token}\nPaid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`;
-            window.location.href = `sms:${cust.phone}?body=${encodeURIComponent(msg)}`;
-            showNotification("SMS opened");
-        } else showNotification("Phone missing or edit a customer", true);
-    }
+    function handleSMS() { const cust = generateReceiptForEdit(); if(cust && cust.phone) { const msg = `US FIBER NET\nReceipt: ${cust.token}\nPaid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`; window.location.href = `sms:${cust.phone}?body=${encodeURIComponent(msg)}`; showNotification("SMS opened"); } else showNotification("Phone missing or edit a customer", true); }
+    function handleWhatsApp() { const cust = generateReceiptForEdit(); if(cust && cust.phone) { const msg = `⚡ US FIBER NET ⚡\nReceipt No: ${cust.token}\nAmount Paid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`; const phone = cust.phone.replace(/[^0-9+]/g, '').replace('+', ''); window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank'); showNotification("WhatsApp opened"); } else showNotification("Phone missing or edit a customer", true); }
     
-    function handleWhatsApp() {
-        const cust = generateReceiptForEdit();
-        if(cust && cust.phone) {
-            const msg = `⚡ US FIBER NET ⚡\nReceipt No: ${cust.token}\nAmount Paid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`;
-            const phone = cust.phone.replace(/[^0-9+]/g, '').replace('+', '');
-            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-            showNotification("WhatsApp opened");
-        } else showNotification("Phone missing or edit a customer", true);
-    }
+    function backupJSON() { const backup = { data, users, backupDate: new Date().toISOString() }; const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `US_Fiber_Backup_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`; a.click(); showNotification("Backup saved"); }
+    function restoreData(file) { const reader = new FileReader(); reader.onload = e => { try { const j = JSON.parse(e.target.result); if(j.data) { data = j.data; if(j.users) { users = j.users; saveUsers(); } data.forEach(d => { if(d.isNextMonthPending === undefined) d.isNextMonthPending = false; if(!d.token) d.token = ""; if(!d.receivedBy) d.receivedBy = ""; if(!d.lastUpdated) d.lastUpdated = ""; if(d.pending === undefined) d.pending = d.fees - d.received; }); saveToLocalStorage(); refreshTable(); showNotification("Restored & cloud sync started"); } } catch(err) { showNotification("Invalid file", true); } }; reader.readAsText(file); }
+    function loadFromLocalStorage() { const saved = localStorage.getItem(STORAGE_KEY); if(saved) { data = JSON.parse(saved); data.forEach(d => { if(d.isNextMonthPending === undefined) d.isNextMonthPending = false; if(!d.token) d.token = ""; if(!d.receivedBy) d.receivedBy = ""; if(!d.lastUpdated) d.lastUpdated = ""; if(d.pending === undefined) d.pending = d.fees - d.received; }); } else { data = []; } refreshTable(); }
     
-    function backupJSON() {
-        const backup = { data, users, backupDate: new Date().toISOString() };
-        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `US_Fiber_Backup_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
-        a.click();
-        showNotification("Backup saved");
-    }
-    
-    function restoreData(file) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            try {
-                const j = JSON.parse(e.target.result);
-                if(j.data) {
-                    data = j.data;
-                    if(j.users) { users = j.users; saveUsers(); }
-                    data.forEach(d => {
-                        if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
-                        if(!d.token) d.token = "";
-                        if(!d.receivedBy) d.receivedBy = "";
-                        if(!d.lastUpdated) d.lastUpdated = "";
-                        if(d.pending === undefined) d.pending = d.fees - d.received;
-                    });
-                    saveToLocalStorage();
-                    refreshTable();
-                    showNotification("Restored & cloud sync started");
-                }
-            } catch(err) { showNotification("Invalid file", true); }
-        };
-        reader.readAsText(file);
-    }
-    
-    function loadFromLocalStorage() {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if(saved) {
-            data = JSON.parse(saved);
-            data.forEach(d => {
-                if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
-                if(!d.token) d.token = "";
-                if(!d.receivedBy) d.receivedBy = "";
-                if(!d.lastUpdated) d.lastUpdated = "";
-                if(d.pending === undefined) d.pending = d.fees - d.received;
-            });
-        } else {
-            data = [];
-        }
-        refreshTable();
-    }
-    
-    // Event Bindings (abbreviated for brevity but functional)
+    // Event Bindings
     document.getElementById('dataForm').addEventListener('submit', (e) => { e.preventDefault(); if(editingIndex === -1) addNewEntry(); else updateEntryFromEdit(); });
     document.getElementById('updateBtn').onclick = updateEntryFromEdit;
     document.getElementById('cancelBtn').onclick = cancelEditMode;
@@ -683,122 +602,43 @@ function doGet() {
     document.getElementById('tableResetCustomerBtn').onclick = resetCustomerSelected;
     document.getElementById('tableNextMonthBtn').onclick = markSelectedAsNextMonth;
     document.getElementById('tableUnmarkNextMonthBtn').onclick = unmarkSelectedFromNextMonth;
-    document.getElementById('selectAllCheckbox').addEventListener('change', (e) => {
-        document.querySelectorAll('.row-selector').forEach(cb => {
-            cb.checked = e.target.checked;
-            const s = parseInt(cb.dataset.serial);
-            if(e.target.checked) selectedRowsSet.add(s);
-            else selectedRowsSet.delete(s);
-        });
-        updateSelectedStats();
-    });
     document.getElementById('backupJsonBtn').onclick = backupJSON;
     document.getElementById('restoreBtn').onclick = () => document.getElementById('restoreFile').click();
     document.getElementById('restoreFile').onchange = e => { if(e.target.files.length) restoreData(e.target.files[0]); };
-    document.getElementById('reportBtn').onclick = () => {
-        let csv = "Name,Phone,Fees,Received,Pending,Day,Status\n" + data.map(c => `${c.name},${c.phone},${c.fees},${c.received},${c.pending},${c.day},${c.isNextMonthPending ? "Next" : "Current"}`).join("\n");
-        const blob = new Blob([csv], { type: "text/csv" });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = "report.csv";
-        a.click();
-    };
+    document.getElementById('reportBtn').onclick = generateProfessionalReport;
     document.getElementById('allResetBtn').onclick = allResetSpecial;
-    document.getElementById('resetDefaultPasswordBtn').onclick = () => {
-        const admin = users.find(u => u.username === 'admin');
-        if(admin) admin.password = "admin123";
-        saveUsers();
-        showNotification("Admin password reset to admin123");
-    };
-    
-    document.getElementById('doSearchBtn').onclick = () => {
-        activeSearch.field = document.getElementById('searchField').value;
-        activeSearch.value = document.getElementById('searchValue').value;
-        refreshTable();
-    };
-    document.getElementById('clearSearchBtn').onclick = () => {
-        activeSearch = { field: "", value: "" };
-        document.getElementById('searchValue').value = "";
-        refreshTable();
-        showNotification("Search cleared");
-    };
+    document.getElementById('resetDefaultPasswordBtn').onclick = () => { const admin = users.find(u => u.username === 'admin'); if(admin) admin.password = "admin123"; saveUsers(); showNotification("Admin password reset to admin123"); };
+    document.getElementById('doSearchBtn').onclick = () => { activeSearch.field = document.getElementById('searchField').value; activeSearch.value = document.getElementById('searchValue').value; refreshTable(); };
+    document.getElementById('clearSearchBtn').onclick = () => { activeSearch = { field: "", value: "" }; document.getElementById('searchValue').value = ""; refreshTable(); showNotification("Search cleared"); };
+    document.getElementById('searchValue').addEventListener('keypress', e => { if(e.key === 'Enter') document.getElementById('doSearchBtn').click(); });
     document.getElementById('filterTypeSelect').addEventListener('change', () => { updateFilterUI(); activeFilter = { type: "", value: "" }; refreshTable(); });
-    document.getElementById('doFilterBtn').onclick = applyFilter;
-    document.getElementById('clearFilterBtn').onclick = () => {
-        activeFilter = { type: "", value: "" };
-        document.getElementById('filterTypeSelect').value = "pending";
-        updateFilterUI();
-        refreshTable();
-        showNotification("All filters cleared");
-    };
-    
-    document.getElementById('setupSheetBtn').onclick = () => {
-        document.getElementById('sheetWebAppUrl').value = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
-        document.getElementById('sheetModal').style.display = 'flex';
-        document.getElementById('dropdownMenu').classList.remove('show');
-    };
+    document.getElementById('doFilterBtn').onclick = () => { const filterType = document.getElementById('filterTypeSelect').value; const filterValue = getFilterValue(); if(!filterValue || filterValue === "") { showNotification("Please select/enter a value", true); return; } activeFilter = { type: filterType, value: filterValue }; refreshTable(); showNotification(`Filter applied: ${filterType} = ${filterValue}`); };
+    document.getElementById('clearFilterBtn').onclick = () => { activeFilter = { type: "", value: "" }; document.getElementById('filterTypeSelect').value = "pending"; updateFilterUI(); refreshTable(); showNotification("All filters cleared"); };
+    document.getElementById('setupSheetBtn').onclick = () => { document.getElementById('sheetWebAppUrl').value = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL; document.getElementById('sheetModal').style.display = 'flex'; document.getElementById('dropdownMenu').classList.remove('show'); };
     document.getElementById('saveSheetSettings').onclick = async () => { await testGoogleSheet(); document.getElementById('sheetModal').style.display = 'none'; };
     document.getElementById('closeSheetModal').onclick = () => document.getElementById('sheetModal').style.display = 'none';
     document.getElementById('manualSyncBtn').onclick = async () => { await loadFromGoogleSheet(); };
     
-    // User management and other modals (simplified but working)
+    // User Management - ONLY ADMIN CAN SEE
     document.getElementById('userManagementBtn').onclick = () => {
-        if(!currentUser?.isAdmin) return;
+        if(!currentUser?.isAdmin) { showNotification("Only admin can access user management", true); return; }
         const container = document.getElementById('userListContainer');
         container.innerHTML = '';
         users.forEach((u, idx) => {
-            const div = document.createElement('div');
-            if(u.username !== 'admin') div.innerHTML = `<span>${u.username}</span><button class="delete-user-btn" data-idx="${idx}">Delete</button>`;
-            else div.innerHTML = `<span>${u.username} (Admin)</span>`;
+            const div = document.createElement('div'); div.style.display = 'flex'; div.style.justifyContent = 'space-between'; div.style.alignItems = 'center'; div.style.padding = '8px'; div.style.borderBottom = '1px solid #3a7b9a';
+            if(u.username !== 'admin') div.innerHTML = `<span>${u.username}</span><button class="delete-user-btn" data-idx="${idx}" style="background:#e53935; padding:5px 12px;">Delete</button>`;
+            else div.innerHTML = `<span>${u.username} (Admin)</span><span style="color:#ffaa66;">Master</span>`;
             container.appendChild(div);
         });
-        document.querySelectorAll('.delete-user-btn').forEach(btn => {
-            btn.onclick = () => {
-                const idx = parseInt(btn.dataset.idx);
-                if(users[idx].username !== 'admin') {
-                    users.splice(idx, 1);
-                    saveUsers();
-                    document.getElementById('userModal').style.display = 'none';
-                    showNotification("User deleted");
-                }
-            };
-        });
+        document.querySelectorAll('.delete-user-btn').forEach(btn => { btn.onclick = () => { const idx = parseInt(btn.dataset.idx); if(users[idx].username !== 'admin') { users.splice(idx, 1); saveUsers(); document.getElementById('userModal').style.display = 'none'; showNotification("User deleted"); } }; });
         document.getElementById('userModal').style.display = 'flex';
     };
-    document.getElementById('createUserBtn').onclick = () => {
-        const un = document.getElementById('newUsername').value.trim();
-        const pw = document.getElementById('newUserPassword').value;
-        if(!un) return;
-        if(pw.length < 4) return;
-        if(users.find(u => u.username === un)) return;
-        users.push({ username: un, password: pw, isAdmin: false });
-        saveUsers();
-        document.getElementById('userModal').style.display = 'none';
-        showNotification("User created");
-    };
+    document.getElementById('createUserBtn').onclick = () => { if(!currentUser?.isAdmin) return; const un = document.getElementById('newUsername').value.trim(); const pw = document.getElementById('newUserPassword').value; if(!un) return; if(pw.length < 4) return; if(users.find(u => u.username === un)) { showNotification("User exists", true); return; } users.push({ username: un, password: pw, isAdmin: false }); saveUsers(); document.getElementById('newUsername').value = ''; document.getElementById('newUserPassword').value = ''; document.getElementById('userModal').style.display = 'none'; showNotification("User created: " + un); };
     document.getElementById('closeUserModalBtn').onclick = () => document.getElementById('userModal').style.display = 'none';
     document.getElementById('changePasswordBtn').onclick = () => document.getElementById('passwordModal').style.display = 'flex';
-    document.getElementById('savePasswordBtn').onclick = () => {
-        const curr = document.getElementById('currentPassword').value;
-        const newp = document.getElementById('newPassword').value;
-        const conf = document.getElementById('confirmPassword').value;
-        if(curr !== currentUser.password) return showNotification("Wrong password", true);
-        if(newp !== conf) return;
-        currentUser.password = newp;
-        const idx = users.findIndex(u => u.username === currentUser.username);
-        if(idx !== -1) users[idx].password = newp;
-        saveUsers();
-        document.getElementById('passwordModal').style.display = 'none';
-        showNotification("Password changed");
-    };
+    document.getElementById('savePasswordBtn').onclick = () => { const curr = document.getElementById('currentPassword').value; const newp = document.getElementById('newPassword').value; const conf = document.getElementById('confirmPassword').value; if(curr !== currentUser.password) return showNotification("Wrong password", true); if(newp !== conf) return; currentUser.password = newp; const idx = users.findIndex(u => u.username === currentUser.username); if(idx !== -1) users[idx].password = newp; saveUsers(); document.getElementById('passwordModal').style.display = 'none'; showNotification("Password changed"); };
     document.getElementById('cancelPasswordBtn').onclick = () => document.getElementById('passwordModal').style.display = 'none';
-    document.getElementById('logoutBtn').onclick = () => {
-        sessionStorage.clear();
-        currentUser = null;
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('mainContainer').style.display = 'none';
-        cancelEditMode();
-    };
+    document.getElementById('logoutBtn').onclick = () => { sessionStorage.clear(); currentUser = null; document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('mainContainer').style.display = 'none'; cancelEditMode(); };
     
     function handleLogin() {
         const username = document.getElementById('loginUsername').value.trim();
@@ -810,7 +650,7 @@ function doGet() {
             sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainContainer').style.display = 'block';
-            document.getElementById('userInfoDisplay').innerHTML = username + (user.isAdmin ? ' (Admin)' : '');
+            document.getElementById('userInfoDisplay').innerHTML = username + (user.isAdmin ? ' 👑 (Admin)' : '');
             document.getElementById('userManagementBtn').style.display = user.isAdmin ? 'block' : 'none';
             loadFromLocalStorage();
             setTimeout(() => { loadFromGoogleSheet(); }, 500);
@@ -826,18 +666,8 @@ function doGet() {
     const menuBtn = document.getElementById('menuBtn'), dropdown = document.getElementById('dropdownMenu');
     menuBtn.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); };
     window.onclick = (e) => { if(menuBtn && dropdown && !menuBtn.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('show'); };
-    
-    document.getElementById('searchPanelBtn').onclick = () => {
-        document.getElementById('searchPanel').classList.toggle('active');
-        document.getElementById('filterPanel').classList.remove('active');
-        dropdown.classList.remove('show');
-    };
-    document.getElementById('filterPanelBtn').onclick = () => {
-        document.getElementById('filterPanel').classList.toggle('active');
-        document.getElementById('searchPanel').classList.remove('active');
-        dropdown.classList.remove('show');
-        setTimeout(() => updateFilterUI(), 50);
-    };
+    document.getElementById('searchPanelBtn').onclick = () => { document.getElementById('searchPanel').classList.toggle('active'); document.getElementById('filterPanel').classList.remove('active'); dropdown.classList.remove('show'); };
+    document.getElementById('filterPanelBtn').onclick = () => { document.getElementById('filterPanel').classList.toggle('active'); document.getElementById('searchPanel').classList.remove('active'); dropdown.classList.remove('show'); setTimeout(() => updateFilterUI(), 50); };
     
     function checkAuth() {
         loadUsers();
@@ -847,7 +677,7 @@ function doGet() {
             currentUser = JSON.parse(saved);
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainContainer').style.display = 'block';
-            document.getElementById('userInfoDisplay').innerHTML = currentUser.username + (currentUser.isAdmin ? ' (Admin)' : '');
+            document.getElementById('userInfoDisplay').innerHTML = currentUser.username + (currentUser.isAdmin ? ' 👑 (Admin)' : '');
             document.getElementById('userManagementBtn').style.display = currentUser.isAdmin ? 'block' : 'none';
             loadFromLocalStorage();
             setTimeout(() => { loadFromGoogleSheet(); }, 500);
