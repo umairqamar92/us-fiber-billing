@@ -71,7 +71,6 @@
         <div class="form-group"><label>Username</label><input type="text" id="loginUsername" placeholder="Username"></div>
         <div class="form-group"><label>Password</label><input type="password" id="loginPassword" placeholder="Password"></div>
         <button id="loginBtn" style="width:100%;">Login</button>
-        <button id="resetDefaultPasswordBtn" style="width:100%; margin-top:12px; background:#ff9800;">Reset Default Password</button>
         <p id="loginMessage" style="color:#ffaa88; margin-top:12px; text-align:center; display:none;">Invalid credentials (use admin / admin123)</p>
     </div>
 </div>
@@ -93,7 +92,7 @@
                     <button id="manualSyncBtn">☁️ Manual Sync from Cloud</button>
                     <button id="userManagementBtn" style="display:none;">👥 User Management</button>
                     <button id="changePasswordBtn">🔒 Change Password</button>
-                    <button id="allResetBtn">🔄 All Reset (Special)</button>
+                    <button id="allResetBtn" style="display:none;">🔄 All Reset (Special)</button>
                     <button id="logoutBtn">🚪 Logout</button>
                 </div>
             </div>
@@ -143,7 +142,7 @@
                 <h2>📊 Dashboard</h2>
                 <div class="stats-grid"><div class="stat-card"><div>Total Customers</div><div class="stat-value" id="totalCustomersCount">0</div></div><div class="stat-card"><div>Pending Cust</div><div class="stat-value pending-value" id="pendingCustomersCount">0</div></div><div class="stat-card"><div>Received Cust</div><div class="stat-value received-value" id="receivedCustomersCount">0</div></div><div class="stat-card"><div>Next Month</div><div class="stat-value" id="nextMonthCustomersCount">0</div></div></div>
                 <div class="stats-grid"><div class="stat-card"><div>Total Fees</div><div class="stat-value" id="totalFeesAmount">0</div></div><div class="stat-card"><div>Pending Fees</div><div class="stat-value pending-value" id="pendingFeesAmount">0</div></div><div class="stat-card"><div>Received Fees</div><div class="stat-value received-value" id="receivedFeesAmount">0</div></div><div class="stat-card"><div>Next Month Fees</div><div class="stat-value" id="nextMonthFeesAmount">0</div></div></div>
-                <div id="syncStatus" class="sync-status">🔄 Checking cloud connection...</div>
+                <div id="syncStatus" class="sync-status">🔄 Connecting to cloud...</div>
             </div>
         </div>
         <div class="table-section">
@@ -174,7 +173,7 @@
 <div class="modal" id="sheetModal" style="display:none;">
     <div class="modal-content" style="max-width:500px;">
         <h2>📎 Google Sheets Setup</h2>
-        <p style="margin-bottom:15px;">Web App URL is pre-configured. You can change if needed.</p>
+        <p style="margin-bottom:15px;">Enter your Google Apps Script Web App URL:</p>
         <div class="form-group"><label>Web App URL</label><input type="text" id="sheetWebAppUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
         <button id="saveSheetSettings">Save & Test</button>
         <button id="closeSheetModal" style="background:#666; margin-top:10px;">Close</button>
@@ -186,95 +185,205 @@
 
 <script>
     // ============================================================
-    // FIXED - SIMPLE WORKING VERSION
+    // FIXED - CLOUD SYNC WORKING VERSION
     // ============================================================
     
-    // Default users - always available
-    const defaultUsers = [{ username: "admin", password: "admin123", isAdmin: true }];
-    const STORAGE_KEY = "usFiberNetData";
-    const USERS_KEY = "usFiberNetUsers";
+    // Default Google Sheets URL - Apni URL yahan paste karein
     const DEFAULT_GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycby5cKvAotWc-5S2yDbH5GmPIhXefW_8VcMAeGo5hn-RGBP_Jo1SXUZonLA-DynGdtM/exec";
     
-    // Global variables
-    let data = [];
-    let users = [];
-    let currentUser = null;
-    let selectedRowsSet = new Set();
-    let editingIndex = -1;
-    let editingCustomerSerial = null;
+    let data = [], editingIndex = -1, editingCustomerSerial = null, selectedRowsSet = new Set(), currentUser = null, users = [];
     let activeSearch = { field: "", value: "" };
     let activeFilter = { type: "", value: "" };
-    let googleSheetUrl = DEFAULT_GOOGLE_SHEET_URL;
+    let googleSheetUrl = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
+    const STORAGE_KEY = "usFiberNetData", USERS_KEY = "usFiberNetUsers";
     
-    // Initialize users in localStorage
-    function initUsers() {
-        let savedUsers = localStorage.getItem(USERS_KEY);
-        if (savedUsers) {
-            try {
-                users = JSON.parse(savedUsers);
-                if (!users.find(u => u.username === "admin")) {
-                    users = defaultUsers;
-                    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-                }
-            } catch(e) {
-                users = defaultUsers;
-                localStorage.setItem(USERS_KEY, JSON.stringify(users));
-            }
-        } else {
-            users = defaultUsers;
-            localStorage.setItem(USERS_KEY, JSON.stringify(users));
-        }
+    if(!localStorage.getItem("googleSheetUrl") && DEFAULT_GOOGLE_SHEET_URL) {
+        localStorage.setItem("googleSheetUrl", DEFAULT_GOOGLE_SHEET_URL);
     }
     
     function showNotification(msg, isError) {
         const n = document.getElementById('notification');
+        if(!n) return;
         n.textContent = msg;
         n.classList.add('show');
-        if (isError) n.classList.add('error');
+        if(isError) n.classList.add('error');
         else n.classList.remove('error');
         setTimeout(() => n.classList.remove('show'), 3000);
     }
     
     function formatAmount(amt) { return amt.toFixed(2); }
+    function generateReceiptNumber() { return "USF-" + new Date().getFullYear() + String(Math.floor(Math.random() * 9999)).padStart(4,'0'); }
     
+    function saveToLocalStorage() { 
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); 
+        autoSyncToGoogleSheet();
+    }
+    
+    function saveUsers() { 
+        localStorage.setItem(USERS_KEY, JSON.stringify(users)); 
+        autoSyncUsersToGoogleSheet();
+    }
+    
+    function loadUsers() { 
+        const saved = localStorage.getItem(USERS_KEY); 
+        if(saved) users = JSON.parse(saved); 
+        else users = [{ username: "admin", password: "admin123", isAdmin: true }]; 
+        saveUsers(); 
+    }
+    
+    function updateMenuVisibility() {
+        const isAdmin = currentUser?.isAdmin === true;
+        const userBtn = document.getElementById('userManagementBtn');
+        const resetBtn = document.getElementById('allResetBtn');
+        if(userBtn) userBtn.style.display = isAdmin ? 'block' : 'none';
+        if(resetBtn) resetBtn.style.display = isAdmin ? 'block' : 'none';
+    }
+    
+    // ============================================================
+    // AUTO SYNC TO GOOGLE SHEET - WORKING
+    // ============================================================
+    async function autoSyncToGoogleSheet() {
+        const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
+        if(!url || url === "" || !data.length) return;
+        try {
+            const response = await fetch(url, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if(result.status === "success") {
+                const syncDiv = document.getElementById('syncStatus');
+                if(syncDiv) { 
+                    syncDiv.innerHTML = '✅ Cloud sync active | Last saved: ' + new Date().toLocaleTimeString(); 
+                    syncDiv.className = 'sync-status success'; 
+                }
+            }
+        } catch(err) { 
+            console.error("Auto sync error:", err);
+            const syncDiv = document.getElementById('syncStatus');
+            if(syncDiv) { 
+                syncDiv.innerHTML = '⚠️ Cloud error: ' + err.message; 
+                syncDiv.className = 'sync-status error'; 
+            }
+        }
+    }
+    
+    async function autoSyncUsersToGoogleSheet() {
+        const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
+        if(!url || url === "" || !users.length) return;
+        try {
+            await fetch(url, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ type: "users", users: users })
+            });
+        } catch(err) { console.error("User sync error:", err); }
+    }
+    
+    async function loadFromGoogleSheet() {
+        const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
+        if(!url || url === "") { 
+            const sd = document.getElementById('syncStatus'); 
+            if(sd){ sd.innerHTML = '⚠️ No Google Sheets URL configured. Click Setup.'; sd.className = 'sync-status error'; } 
+            return false; 
+        }
+        const syncDiv = document.getElementById('syncStatus');
+        if(syncDiv) { syncDiv.innerHTML = '🔄 Loading from cloud...'; syncDiv.className = 'sync-status loading'; }
+        try {
+            const response = await fetch(url + "?type=customers");
+            const result = await response.json();
+            if(result.status === "success" && result.data && Array.isArray(result.data)) {
+                if(result.data.length > 0) {
+                    data = result.data;
+                    data.forEach(d => {
+                        if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
+                        if(!d.token) d.token = "";
+                        if(!d.receivedBy) d.receivedBy = "";
+                        if(!d.lastUpdated) d.lastUpdated = new Date().toLocaleString();
+                        if(d.pending === undefined) d.pending = (d.fees || 0) - (d.received || 0);
+                        if(!d.serial) d.serial = Math.floor(Math.random() * 10000) + 1;
+                    });
+                    saveToLocalStorage();
+                    refreshTable();
+                    if(syncDiv) { syncDiv.innerHTML = '✅ Loaded ' + data.length + ' customers from cloud!'; syncDiv.className = 'sync-status success'; }
+                    showNotification('✅ Loaded ' + data.length + ' customers from cloud!', false);
+                } else {
+                    if(data.length > 0) {
+                        await autoSyncToGoogleSheet();
+                        if(syncDiv) { syncDiv.innerHTML = '✅ Synced ' + data.length + ' customers to cloud!'; syncDiv.className = 'sync-status success'; }
+                    } else {
+                        if(syncDiv) { syncDiv.innerHTML = '📭 No data. Add customers to start syncing.'; syncDiv.className = 'sync-status error'; }
+                    }
+                }
+                return true;
+            }
+        } catch(err) {
+            if(syncDiv) { syncDiv.innerHTML = '⚠️ Connection error: ' + err.message; syncDiv.className = 'sync-status error'; }
+            return false;
+        }
+        return false;
+    }
+    
+    async function testGoogleSheet() {
+        const url = document.getElementById('sheetWebAppUrl').value;
+        if(!url) { showNotification("Enter Web App URL", true); return false; }
+        localStorage.setItem("googleSheetUrl", url);
+        showNotification("Settings saved! Testing connection...", false);
+        try {
+            const response = await fetch(url + "?type=customers");
+            const result = await response.json();
+            if(result.status === "success") {
+                showNotification("✅ Connection successful! Loading data...", false);
+                await loadFromGoogleSheet();
+                return true;
+            } else {
+                showNotification("❌ Connection failed: " + JSON.stringify(result), true);
+                return false;
+            }
+        } catch(err) {
+            showNotification("❌ Cannot connect: " + err.message, true);
+            return false;
+        }
+    }
+    
+    // ============================================================
+    // TABLE FUNCTIONS
+    // ============================================================
     function refreshTable() {
         const tbody = document.getElementById('tableBody');
-        if (!tbody) return;
+        if(!tbody) return;
         tbody.innerHTML = "";
         
         let filtered = [...data];
-        
-        // Apply search
-        if (activeSearch.field && activeSearch.value.trim()) {
+        if(activeSearch.field && activeSearch.value.trim()) {
             const val = activeSearch.value.toLowerCase().trim();
             filtered = filtered.filter(c => {
-                if (activeSearch.field === "name") return c.name.toLowerCase().includes(val);
-                if (activeSearch.field === "phone") return (c.phone || "").toLowerCase().includes(val);
+                if(activeSearch.field === "name") return c.name.toLowerCase().includes(val);
+                if(activeSearch.field === "phone") return (c.phone || "").toLowerCase().includes(val);
                 return true;
             });
         }
-        
-        // Apply filter
-        if (activeFilter.type && activeFilter.value) {
+        if(activeFilter.type && activeFilter.value) {
             const val = activeFilter.value.trim();
             filtered = filtered.filter(c => {
-                if (activeFilter.type === 'pending') {
-                    if (val === ">0") return c.pending > 0;
-                    if (val === "=0") return c.pending === 0;
+                if(activeFilter.type === 'pending') {
+                    if(val === ">0") return c.pending > 0;
+                    if(val === "=0") return c.pending === 0;
                     return parseFloat(val) === c.pending;
                 }
-                if (activeFilter.type === 'received') {
-                    if (val === ">0") return c.received > 0;
-                    if (val === "=0") return c.received === 0;
+                if(activeFilter.type === 'received') {
+                    if(val === ">0") return c.received > 0;
+                    if(val === "=0") return c.received === 0;
                     return parseFloat(val) === c.received;
                 }
-                if (activeFilter.type === 'agent') return (c.receivedBy || "") === val;
-                if (activeFilter.type === 'day') return c.day === val;
+                if(activeFilter.type === 'agent') return (c.receivedBy || "") === val;
+                if(activeFilter.type === 'day') return c.day === val;
                 return true;
             });
         }
         
-        if (filtered.length === 0) {
+        if(filtered.length === 0) {
             const row = tbody.insertRow();
             const cell = row.insertCell(0);
             cell.colSpan = 11;
@@ -294,7 +403,7 @@
             cb.dataset.serial = entry.serial;
             cb.checked = selectedRowsSet.has(entry.serial);
             cb.onchange = () => {
-                if (cb.checked) selectedRowsSet.add(entry.serial);
+                if(cb.checked) selectedRowsSet.add(entry.serial);
                 else selectedRowsSet.delete(entry.serial);
                 updateSelectedStats();
             };
@@ -304,10 +413,10 @@
             row.insertCell(3).innerText = entry.phone || 'N/A';
             row.insertCell(4).innerText = formatAmount(entry.fees);
             row.insertCell(5).innerText = formatAmount(entry.received);
-            row.insertCell(6).innerHTML = '<span style="color:' + (entry.pending > 0 ? '#ffaa77' : '#8effa0') + '">' + formatAmount(entry.pending) + '</span>';
+            row.insertCell(6).innerHTML = '<span style="color:'+(entry.pending>0?'#ffaa77':'#8effa0')+'">'+formatAmount(entry.pending)+'</span>';
             row.insertCell(7).innerHTML = entry.token || '<span style="color:#ffaa66;">No Receipt</span>';
-            const agentDate = entry.receivedBy ? entry.receivedBy + '<br/><small>' + (entry.lastUpdated?.split(',')[0] || '') + '</small>' : '—';
-            row.insertCell(8).innerHTML = '<small>' + agentDate + '</small>';
+            const agentDate = entry.receivedBy ? entry.receivedBy + '<br/><small>'+(entry.lastUpdated?.split(',')[0]||'')+'</small>' : '—';
+            row.insertCell(8).innerHTML = '<small>'+agentDate+'</small>';
             row.insertCell(9).innerHTML = entry.isNextMonthPending ? '<span class="badge-next">Next Month</span>' : '<span>Current</span>';
             const actionCell = row.insertCell(10);
             const editBtn = document.createElement('button');
@@ -316,7 +425,7 @@
             editBtn.style.padding = '5px 12px';
             editBtn.onclick = () => {
                 const idx = data.findIndex(d => d.serial === entry.serial);
-                if (idx !== -1) {
+                if(idx !== -1) {
                     const eData = data[idx];
                     document.getElementById('name').value = eData.name;
                     document.getElementById('phone').value = eData.phone || '';
@@ -328,7 +437,7 @@
                     document.getElementById('addBtn').style.display = 'none';
                     document.getElementById('editActionGroup').style.display = 'flex';
                     document.getElementById('editingBadge').style.display = 'inline-block';
-                    document.getElementById('customerDetails').innerHTML = `<div><strong>${eData.name}</strong><br/>📞 Phone: ${eData.phone || 'N/A'}<br/>💰 Fees: ${formatAmount(eData.fees)}<br/>💵 Received: ${formatAmount(eData.received)}<br/>📌 Pending: ${formatAmount(eData.pending)}<br/>📅 Due Day: ${eData.day}<br/>🧾 Receipt: ${eData.token || 'None'}<br/>👤 Agent: ${eData.receivedBy || '-'}<br/>📆 Last: ${eData.lastUpdated || '-'}</div>`;
+                    document.getElementById('customerDetails').innerHTML = `<div><strong>${eData.name}</strong><br/>📞 Phone: ${eData.phone||'N/A'}<br/>💰 Fees: ${formatAmount(eData.fees)}<br/>💵 Received: ${formatAmount(eData.received)}<br/>📌 Pending: ${formatAmount(eData.pending)}<br/>📅 Due Day: ${eData.day}<br/>🧾 Receipt: ${eData.token||'None'}<br/>👤 Agent: ${eData.receivedBy||'-'}<br/>📆 Last: ${eData.lastUpdated||'-'}</div>`;
                     refreshTable();
                     setTimeout(() => document.getElementById('received').focus(), 100);
                 }
@@ -345,87 +454,63 @@
         document.getElementById('pendingCustomersCount').innerText = all.filter(c => c.pending > 0 && !c.isNextMonthPending).length;
         document.getElementById('receivedCustomersCount').innerText = all.filter(c => c.received > 0 && !c.isNextMonthPending).length;
         document.getElementById('nextMonthCustomersCount').innerText = all.filter(c => c.isNextMonthPending).length;
-        document.getElementById('totalFeesAmount').innerText = formatAmount(all.reduce((s, c) => s + (c.fees || 0), 0));
-        document.getElementById('pendingFeesAmount').innerText = formatAmount(all.filter(c => !c.isNextMonthPending).reduce((s, c) => s + (c.pending || 0), 0));
-        document.getElementById('receivedFeesAmount').innerText = formatAmount(all.filter(c => !c.isNextMonthPending).reduce((s, c) => s + (c.received || 0), 0));
-        document.getElementById('nextMonthFeesAmount').innerText = formatAmount(all.filter(c => c.isNextMonthPending).reduce((s, c) => s + (c.fees || 0), 0));
+        document.getElementById('totalFeesAmount').innerText = formatAmount(all.reduce((s,c)=>s+(c.fees||0),0));
+        document.getElementById('pendingFeesAmount').innerText = formatAmount(all.filter(c=>!c.isNextMonthPending).reduce((s,c)=>s+(c.pending||0),0));
+        document.getElementById('receivedFeesAmount').innerText = formatAmount(all.filter(c=>!c.isNextMonthPending).reduce((s,c)=>s+(c.received||0),0));
+        document.getElementById('nextMonthFeesAmount').innerText = formatAmount(all.filter(c=>c.isNextMonthPending).reduce((s,c)=>s+(c.fees||0),0));
     }
     
     function updateSelectedStats() {
         document.getElementById('selectionCountText').innerText = selectedRowsSet.size + ' selected';
         document.getElementById('tableActionButtons').style.display = selectedRowsSet.size > 0 ? "flex" : "none";
         const selectAll = document.getElementById('selectAllCheckbox');
-        if (selectAll) selectAll.checked = (selectedRowsSet.size === data.length && data.length > 0);
+        if(selectAll) selectAll.checked = (selectedRowsSet.size === data.length && data.length > 0);
     }
     
-    function saveToLocalStorage() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
-    
-    function loadFromLocalStorage() {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            try {
-                data = JSON.parse(saved);
-                data.forEach(d => {
-                    if (d.isNextMonthPending === undefined) d.isNextMonthPending = false;
-                    if (!d.token) d.token = "";
-                    if (!d.receivedBy) d.receivedBy = "";
-                    if (!d.lastUpdated) d.lastUpdated = "";
-                    if (d.pending === undefined) d.pending = (d.fees || 0) - (d.received || 0);
-                    if (!d.serial) d.serial = Math.floor(Math.random() * 10000) + 1;
-                });
-            } catch(e) { data = []; }
-        } else {
-            data = [];
-        }
-        refreshTable();
-    }
+    document.getElementById('selectAllCheckbox').addEventListener('change', (e) => {
+        document.querySelectorAll('.row-selector').forEach(cb => {
+            cb.checked = e.target.checked;
+            const s = parseInt(cb.dataset.serial);
+            if(e.target.checked) selectedRowsSet.add(s);
+            else selectedRowsSet.delete(s);
+        });
+        updateSelectedStats();
+    });
     
     function addNewEntry() {
         const name = document.getElementById('name').value.trim();
-        if (!name) { showNotification("Name required", true); return; }
+        if(!name) { showNotification("Name required", true); return; }
         const phone = document.getElementById('phone').value;
         const fees = parseFloat(document.getElementById('fees').value) || 0;
         let receivedVal = document.getElementById('received').value;
         const received = (receivedVal === '' || receivedVal === null) ? 0 : parseFloat(receivedVal) || 0;
         const day = document.getElementById('day').value;
-        if (!day) { showNotification("Due day required", true); return; }
+        if(!day) { showNotification("Due day required", true); return; }
         const pending = fees - received;
         const newSerial = data.length > 0 ? Math.max(...data.map(d => d.serial)) + 1 : 1;
-        data.push({
-            serial: newSerial, name, phone, fees, received, pending, day,
-            token: "", isNextMonthPending: false,
-            receivedBy: currentUser?.username || "unknown",
-            lastUpdated: new Date().toLocaleString()
-        });
+        data.push({ serial: newSerial, name, phone, fees, received, pending, day, token: "", isNextMonthPending: false, receivedBy: currentUser?.username || "unknown", lastUpdated: new Date().toLocaleString() });
         saveToLocalStorage();
         refreshTable();
-        showNotification("Customer added", false);
+        showNotification("Customer added & synced to cloud", false);
         document.getElementById('dataForm').reset();
         document.getElementById('received').value = '';
     }
     
     function updateEntryFromEdit() {
-        if (editingIndex === -1) return;
+        if(editingIndex === -1) return;
         const name = document.getElementById('name').value.trim();
         const phone = document.getElementById('phone').value;
         const fees = parseFloat(document.getElementById('fees').value) || 0;
         let receivedVal = document.getElementById('received').value;
         const received = (receivedVal === '' || receivedVal === null) ? 0 : parseFloat(receivedVal) || 0;
         const day = document.getElementById('day').value;
-        if (!name || !day) return;
+        if(!name || !day) return;
         const pending = fees - received;
-        data[editingIndex] = {
-            ...data[editingIndex],
-            name, phone, fees, received, pending, day,
-            lastUpdated: new Date().toLocaleString(),
-            receivedBy: currentUser?.username
-        };
+        data[editingIndex] = { ...data[editingIndex], name, phone, fees, received, pending, day, lastUpdated: new Date().toLocaleString(), receivedBy: currentUser?.username };
         saveToLocalStorage();
         cancelEditMode();
         refreshTable();
-        showNotification("Customer updated", false);
+        showNotification("Updated & synced", false);
     }
     
     function cancelEditMode() {
@@ -441,23 +526,47 @@
     }
     
     function deleteSelectedRows() {
-        if (selectedRowsSet.size === 0) return;
-        if (confirm("Delete " + selectedRowsSet.size + " customers?")) {
+        if(selectedRowsSet.size === 0) return;
+        if(confirm("Delete " + selectedRowsSet.size + " customers?")) {
             data = data.filter(d => !selectedRowsSet.has(d.serial));
-            if (editingCustomerSerial && selectedRowsSet.has(editingCustomerSerial)) cancelEditMode();
+            if(editingCustomerSerial && selectedRowsSet.has(editingCustomerSerial)) cancelEditMode();
             selectedRowsSet.clear();
             saveToLocalStorage();
             refreshTable();
-            showNotification("Deleted", false);
+            showNotification("Deleted & cloud updated", false);
         }
     }
     
+    function markSelectedAsNextMonth() {
+        if(selectedRowsSet.size === 0) return;
+        Array.from(selectedRowsSet).forEach(s => {
+            const idx = data.findIndex(d => d.serial === s);
+            if(idx !== -1) data[idx].isNextMonthPending = true;
+        });
+        selectedRowsSet.clear();
+        saveToLocalStorage();
+        refreshTable();
+        showNotification("Marked Next Month", false);
+    }
+    
+    function unmarkSelectedFromNextMonth() {
+        if(selectedRowsSet.size === 0) return;
+        Array.from(selectedRowsSet).forEach(s => {
+            const idx = data.findIndex(d => d.serial === s);
+            if(idx !== -1) data[idx].isNextMonthPending = false;
+        });
+        selectedRowsSet.clear();
+        saveToLocalStorage();
+        refreshTable();
+        showNotification("Unmarked", false);
+    }
+    
     function resetCustomerSelected() {
-        if (selectedRowsSet.size === 0) return;
-        if (confirm("Reset payment for " + selectedRowsSet.size + " customers?")) {
+        if(selectedRowsSet.size === 0) return;
+        if(confirm("Reset payment for " + selectedRowsSet.size + " customers?")) {
             selectedRowsSet.forEach(serial => {
                 const idx = data.findIndex(d => d.serial === serial);
-                if (idx !== -1) {
+                if(idx !== -1) {
                     data[idx].token = "";
                     data[idx].received = 0;
                     data[idx].pending = data[idx].fees;
@@ -472,113 +581,16 @@
         }
     }
     
-    function markSelectedAsNextMonth() {
-        if (selectedRowsSet.size === 0) return;
-        Array.from(selectedRowsSet).forEach(s => {
-            const idx = data.findIndex(d => d.serial === s);
-            if (idx !== -1) data[idx].isNextMonthPending = true;
-        });
-        selectedRowsSet.clear();
-        saveToLocalStorage();
-        refreshTable();
-        showNotification("Marked Next Month", false);
-    }
-    
-    function unmarkSelectedFromNextMonth() {
-        if (selectedRowsSet.size === 0) return;
-        Array.from(selectedRowsSet).forEach(s => {
-            const idx = data.findIndex(d => d.serial === s);
-            if (idx !== -1) data[idx].isNextMonthPending = false;
-        });
-        selectedRowsSet.clear();
-        saveToLocalStorage();
-        refreshTable();
-        showNotification("Unmarked", false);
-    }
-    
-    function generateReceiptNumber() {
-        return "USF-" + new Date().getFullYear() + String(Math.floor(Math.random() * 9999)).padStart(4, '0');
-    }
-    
-    function generateReceiptForEdit() {
-        if (editingIndex === -1) { showNotification("Edit a customer first", true); return null; }
-        const cust = data[editingIndex];
-        if (!cust.token || cust.token === "") {
-            cust.token = generateReceiptNumber();
-            saveToLocalStorage();
-            refreshTable();
-        }
-        return cust;
-    }
-    
-    function handleSMS() {
-        const cust = generateReceiptForEdit();
-        if (cust && cust.phone) {
-            const msg = `US FIBER NET\nReceipt: ${cust.token}\nPaid: ${cust.received}\nPending: ${cust.pending}\nThank you!`;
-            window.location.href = `sms:${cust.phone}?body=${encodeURIComponent(msg)}`;
-            showNotification("SMS opened", false);
-        } else {
-            showNotification("Phone missing", true);
-        }
-    }
-    
-    function handleWhatsApp() {
-        const cust = generateReceiptForEdit();
-        if (cust && cust.phone) {
-            const msg = `US FIBER NET\nReceipt: ${cust.token}\nPaid: ${cust.received}\nPending: ${cust.pending}\nThank you!`;
-            const phone = cust.phone.replace(/[^0-9+]/g, '').replace('+', '');
-            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-            showNotification("WhatsApp opened", false);
-        } else {
-            showNotification("Phone missing", true);
-        }
-    }
-    
-    function backupJSON() {
-        const backup = { data, users, backupDate: new Date().toISOString() };
-        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `US_Fiber_Backup_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
-        a.click();
-        showNotification("Backup saved", false);
-    }
-    
-    function restoreData(file) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            try {
-                const j = JSON.parse(e.target.result);
-                if (j.data) {
-                    data = j.data;
-                    if (j.users) {
-                        users = j.users;
-                        localStorage.setItem(USERS_KEY, JSON.stringify(users));
-                    }
-                    data.forEach(d => {
-                        if (d.isNextMonthPending === undefined) d.isNextMonthPending = false;
-                        if (!d.token) d.token = "";
-                        if (!d.receivedBy) d.receivedBy = "";
-                        if (!d.lastUpdated) d.lastUpdated = "";
-                        if (d.pending === undefined) d.pending = (d.fees || 0) - (d.received || 0);
-                        if (!d.serial) d.serial = Math.floor(Math.random() * 10000) + 1;
-                    });
-                    saveToLocalStorage();
-                    refreshTable();
-                    showNotification("Restored " + data.length + " customers", false);
-                }
-            } catch (err) {
-                showNotification("Invalid file", true);
-            }
-        };
-        reader.readAsText(file);
-    }
-    
     function allResetSpecial() {
-        if (confirm("⚠️ ALL RESET: Clear all payments?")) {
+        if(!currentUser?.isAdmin) {
+            showNotification("Only admin can perform this action", true);
+            return;
+        }
+        if(confirm("⚠️ ALL RESET SPECIAL:\n- Next Month customers: Pending amount DOUBLE\n- All become CURRENT\nProceed?")) {
             data.forEach(c => {
+                if(c.isNextMonthPending) { c.pending = c.fees * 2; } 
+                else { c.pending = c.fees; }
                 c.received = 0;
-                c.pending = c.fees;
                 c.token = "";
                 c.receivedBy = "";
                 c.lastUpdated = "";
@@ -586,7 +598,7 @@
             });
             saveToLocalStorage();
             refreshTable();
-            showNotification("All reset completed", false);
+            showNotification("Special reset completed", false);
         }
     }
     
@@ -596,8 +608,9 @@
         const currentMonth = monthNames[now.getMonth()];
         const currentYear = now.getFullYear();
         const currentCustomers = data.filter(c => !c.isNextMonthPending);
-        const totalFees = currentCustomers.reduce((s, c) => s + c.fees, 0);
-        const totalReceived = currentCustomers.reduce((s, c) => s + c.received, 0);
+        const totalFees = currentCustomers.reduce((s,c)=>s+c.fees,0);
+        const totalReceived = currentCustomers.reduce((s,c)=>s+c.received,0);
+        const totalPending = currentCustomers.reduce((s,c)=>s+c.pending,0);
         
         let csv = "Name,Phone,Fees,Received,Pending,Day,Status\n";
         currentCustomers.forEach(c => {
@@ -612,49 +625,116 @@
         showNotification("Report downloaded", false);
     }
     
-    function handleLogin() {
-        const username = document.getElementById('loginUsername').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        const user = users.find(u => u.username === username && u.password === password);
-        
-        if (user) {
-            currentUser = { ...user };
-            sessionStorage.setItem('usFiberLoggedIn', 'true');
-            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainContainer').style.display = 'block';
-            document.getElementById('userInfoDisplay').innerHTML = username + (user.isAdmin ? ' (Admin)' : '');
-            document.getElementById('userManagementBtn').style.display = user.isAdmin ? 'block' : 'none';
-            loadFromLocalStorage();
-            showNotification("Welcome " + username, false);
+    function generateReceiptForEdit() {
+        if(editingIndex === -1) { showNotification("Edit a customer first", true); return null; }
+        const cust = data[editingIndex];
+        if(!cust.token || cust.token === "") { cust.token = generateReceiptNumber(); saveToLocalStorage(); refreshTable(); }
+        return cust;
+    }
+    
+    function handleSMS() {
+        const cust = generateReceiptForEdit();
+        if(cust && cust.phone) {
+            const msg = `US FIBER NET\nReceipt: ${cust.token}\nPaid: ${cust.received}\nPending: ${cust.pending}\nThank you!`;
+            window.location.href = `sms:${cust.phone}?body=${encodeURIComponent(msg)}`;
+            showNotification("SMS opened", false);
         } else {
-            document.getElementById('loginMessage').style.display = 'block';
-            setTimeout(() => {
-                document.getElementById('loginMessage').style.display = 'none';
-            }, 3000);
+            showNotification("Phone missing", true);
         }
     }
     
-    function logout() {
-        sessionStorage.clear();
-        currentUser = null;
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('mainContainer').style.display = 'none';
-        cancelEditMode();
+    function handleWhatsApp() {
+        const cust = generateReceiptForEdit();
+        if(cust && cust.phone) {
+            const msg = `US FIBER NET\nReceipt: ${cust.token}\nPaid: ${cust.received}\nPending: ${cust.pending}\nThank you!`;
+            const phone = cust.phone.replace(/[^0-9+]/g, '').replace('+', '');
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+            showNotification("WhatsApp opened", false);
+        } else {
+            showNotification("Phone missing", true);
+        }
     }
     
-    function resetDefaultPassword() {
-        const admin = users.find(u => u.username === 'admin');
-        if (admin) admin.password = "admin123";
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
-        showNotification("Admin password reset to admin123", false);
+    function backupJSON() {
+        const backup = { data, users, backupDate: new Date().toISOString() };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `US_Fiber_Backup_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
+        a.click();
+        showNotification("Backup saved", false);
     }
     
-    function clearSearch() {
-        activeSearch = { field: "", value: "" };
-        document.getElementById('searchValue').value = "";
+    function restoreData(file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const j = JSON.parse(e.target.result);
+                if(j.data) {
+                    data = j.data;
+                    if(j.users) {
+                        users = j.users;
+                        saveUsers();
+                    }
+                    data.forEach(d => {
+                        if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
+                        if(!d.token) d.token = "";
+                        if(!d.receivedBy) d.receivedBy = "";
+                        if(!d.lastUpdated) d.lastUpdated = "";
+                        if(d.pending === undefined) d.pending = d.fees - d.received;
+                    });
+                    saveToLocalStorage();
+                    refreshTable();
+                    showNotification("Restored " + data.length + " customers & synced to cloud!", false);
+                }
+            } catch(err) {
+                showNotification("Invalid file", true);
+            }
+        };
+        reader.readAsText(file);
+    }
+    
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if(saved) {
+            try {
+                data = JSON.parse(saved);
+                data.forEach(d => {
+                    if(d.isNextMonthPending === undefined) d.isNextMonthPending = false;
+                    if(!d.token) d.token = "";
+                    if(!d.receivedBy) d.receivedBy = "";
+                    if(!d.lastUpdated) d.lastUpdated = "";
+                    if(d.pending === undefined) d.pending = d.fees - d.received;
+                });
+            } catch(e) { data = []; }
+        } else {
+            data = [];
+        }
         refreshTable();
-        showNotification("Search cleared", false);
+    }
+    
+    function updateFilterUI() {
+        const filterType = document.getElementById('filterTypeSelect').value;
+        const container = document.getElementById('filterValueContainer');
+        if(filterType === 'agent' || filterType === 'day') {
+            container.innerHTML = `<label>Enter Value</label><input type="text" id="filterValueInput" placeholder="Enter value">`;
+        } else {
+            container.innerHTML = `<label>Value (e.g., >0, =0, or exact amount)</label><input type="text" id="filterValueInput" placeholder=">0, =0, or number">`;
+        }
+        const inputEl = document.getElementById('filterValueInput');
+        if(inputEl) inputEl.addEventListener('keypress', (e) => { if(e.key === 'Enter') applyFilter(); });
+    }
+    
+    function applyFilter() {
+        const filterType = document.getElementById('filterTypeSelect').value;
+        const filterValue = document.getElementById('filterValueInput').value;
+        if(!filterValue || filterValue === "") {
+            showNotification("Please enter a value", true);
+            return;
+        }
+        activeFilter = { type: filterType, value: filterValue };
+        refreshTable();
+        showNotification(`Filter applied: ${filterType} = ${filterValue}`, false);
     }
     
     function clearFilter() {
@@ -665,36 +745,46 @@
         showNotification("Filter cleared", false);
     }
     
-    function updateFilterUI() {
-        // Simple filter UI update
-        const container = document.getElementById('filterValueContainer');
-        container.innerHTML = `<label>Value (e.g., >0, =0, or exact amount)</label>
-                              <input type="text" id="filterValueInput" placeholder=">0, =0, or number">`;
-        const inputEl = document.getElementById('filterValueInput');
-        if (inputEl) {
-            inputEl.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') applyFilter();
-            });
-        }
-    }
-    
-    function applyFilter() {
-        const filterType = document.getElementById('filterTypeSelect').value;
-        const filterValue = document.getElementById('filterValueInput').value;
-        if (!filterValue || filterValue === "") {
-            showNotification("Please enter a value", true);
-            return;
-        }
-        activeFilter = { type: filterType, value: filterValue };
+    function clearSearch() {
+        activeSearch = { field: "", value: "" };
+        document.getElementById('searchValue').value = "";
         refreshTable();
-        showNotification(`Filter applied: ${filterType} = ${filterValue}`, false);
+        showNotification("Search cleared", false);
     }
     
-    // Event Listeners
+    // ============================================================
+    // LOGIN FUNCTION
+    // ============================================================
+    function handleLogin() {
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const user = users.find(u => u.username === username && u.password === password);
+        
+        if(user) {
+            currentUser = { ...user };
+            sessionStorage.setItem('usFiberLoggedIn', 'true');
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+            document.getElementById('userInfoDisplay').innerHTML = username + (user.isAdmin ? ' 👑 (Admin)' : '');
+            updateMenuVisibility();
+            loadFromLocalStorage();
+            setTimeout(() => { loadFromGoogleSheet(); }, 500);
+            showNotification("Welcome " + username + "! Loading cloud data...", false);
+        } else {
+            const msgDiv = document.getElementById('loginMessage');
+            msgDiv.style.display = 'block';
+            setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
+        }
+    }
+    
+    // ============================================================
+    // EVENT LISTENERS
+    // ============================================================
     document.getElementById('loginBtn').onclick = handleLogin;
-    document.getElementById('resetDefaultPasswordBtn').onclick = resetDefaultPassword;
-    document.getElementById('logoutBtn').onclick = logout;
-    document.getElementById('addBtn').onclick = addNewEntry;
+    document.getElementById('loginPassword').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleLogin(); });
+    
+    document.getElementById('dataForm').addEventListener('submit', (e) => { e.preventDefault(); if(editingIndex === -1) addNewEntry(); else updateEntryFromEdit(); });
     document.getElementById('updateBtn').onclick = updateEntryFromEdit;
     document.getElementById('cancelBtn').onclick = cancelEditMode;
     document.getElementById('sendSmsBtn').onclick = handleSMS;
@@ -705,7 +795,7 @@
     document.getElementById('tableUnmarkNextMonthBtn').onclick = unmarkSelectedFromNextMonth;
     document.getElementById('backupJsonBtn').onclick = backupJSON;
     document.getElementById('restoreBtn').onclick = () => document.getElementById('restoreFile').click();
-    document.getElementById('restoreFile').onchange = e => { if (e.target.files.length) restoreData(e.target.files[0]); };
+    document.getElementById('restoreFile').onchange = e => { if(e.target.files.length) restoreData(e.target.files[0]); };
     document.getElementById('reportBtn').onclick = generateProfessionalReport;
     document.getElementById('allResetBtn').onclick = allResetSpecial;
     document.getElementById('doSearchBtn').onclick = () => {
@@ -714,49 +804,28 @@
         refreshTable();
     };
     document.getElementById('clearSearchBtn').onclick = clearSearch;
+    document.getElementById('searchValue').addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doSearchBtn').click(); });
+    document.getElementById('filterTypeSelect').addEventListener('change', () => { updateFilterUI(); activeFilter = { type: "", value: "" }; refreshTable(); });
     document.getElementById('doFilterBtn').onclick = applyFilter;
     document.getElementById('clearFilterBtn').onclick = clearFilter;
-    document.getElementById('selectAllCheckbox').onchange = (e) => {
-        document.querySelectorAll('.row-selector').forEach(cb => {
-            cb.checked = e.target.checked;
-            const s = parseInt(cb.dataset.serial);
-            if (e.target.checked) selectedRowsSet.add(s);
-            else selectedRowsSet.delete(s);
-        });
-        updateSelectedStats();
-    };
-    
-    document.getElementById('filterTypeSelect').onchange = updateFilterUI;
-    document.getElementById('searchValue').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') document.getElementById('doSearchBtn').click();
-    });
-    
     document.getElementById('setupSheetBtn').onclick = () => {
-        document.getElementById('sheetWebAppUrl').value = googleSheetUrl;
+        document.getElementById('sheetWebAppUrl').value = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
         document.getElementById('sheetModal').style.display = 'flex';
         document.getElementById('dropdownMenu').classList.remove('show');
     };
-    document.getElementById('saveSheetSettings').onclick = () => {
-        const newUrl = document.getElementById('sheetWebAppUrl').value;
-        if (newUrl) {
-            googleSheetUrl = newUrl;
-            localStorage.setItem("googleSheetUrl", newUrl);
-            showNotification("Google Sheets URL saved", false);
-        }
-        document.getElementById('sheetModal').style.display = 'none';
-    };
+    document.getElementById('saveSheetSettings').onclick = async () => { await testGoogleSheet(); document.getElementById('sheetModal').style.display = 'none'; };
     document.getElementById('closeSheetModal').onclick = () => document.getElementById('sheetModal').style.display = 'none';
-    document.getElementById('manualSyncBtn').onclick = () => showNotification("Sync feature - data saved locally", false);
+    document.getElementById('manualSyncBtn').onclick = async () => { await loadFromGoogleSheet(); };
     
     // User Management
     document.getElementById('userManagementBtn').onclick = () => {
-        if (!currentUser?.isAdmin) { showNotification("Only admin can access", true); return; }
+        if(!currentUser?.isAdmin) { showNotification("Only admin can access user management", true); return; }
         const container = document.getElementById('userListContainer');
         container.innerHTML = '';
         users.forEach((u, idx) => {
             const div = document.createElement('div');
             div.style.cssText = 'display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #3a7b9a;';
-            if (u.username !== 'admin') {
+            if(u.username !== 'admin') {
                 div.innerHTML = `<span>${u.username}</span><button class="delete-user-btn" data-idx="${idx}" style="background:#e53935; padding:5px 12px;">Delete</button>`;
             } else {
                 div.innerHTML = `<span>${u.username} (Admin)</span><span style="color:#ffaa66;">Master</span>`;
@@ -766,9 +835,9 @@
         document.querySelectorAll('.delete-user-btn').forEach(btn => {
             btn.onclick = () => {
                 const idx = parseInt(btn.dataset.idx);
-                if (users[idx].username !== 'admin') {
+                if(users[idx].username !== 'admin') {
                     users.splice(idx, 1);
-                    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+                    saveUsers();
                     document.getElementById('userModal').style.display = 'none';
                     showNotification("User deleted", false);
                 }
@@ -776,15 +845,16 @@
         });
         document.getElementById('userModal').style.display = 'flex';
     };
+    
     document.getElementById('createUserBtn').onclick = () => {
-        if (!currentUser?.isAdmin) return;
+        if(!currentUser?.isAdmin) return;
         const un = document.getElementById('newUsername').value.trim();
         const pw = document.getElementById('newUserPassword').value;
-        if (!un) return;
-        if (pw.length < 4) { showNotification("Password min 4 chars", true); return; }
-        if (users.find(u => u.username === un)) { showNotification("User exists", true); return; }
+        if(!un) { showNotification("Username required", true); return; }
+        if(pw.length < 4) { showNotification("Password min 4 chars", true); return; }
+        if(users.find(u => u.username === un)) { showNotification("User exists", true); return; }
         users.push({ username: un, password: pw, isAdmin: false });
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+        saveUsers();
         document.getElementById('newUsername').value = '';
         document.getElementById('newUserPassword').value = '';
         document.getElementById('userModal').style.display = 'none';
@@ -798,65 +868,77 @@
         const curr = document.getElementById('currentPassword').value;
         const newp = document.getElementById('newPassword').value;
         const conf = document.getElementById('confirmPassword').value;
-        if (curr !== currentUser.password) { showNotification("Wrong password", true); return; }
-        if (newp !== conf) { showNotification("Passwords don't match", true); return; }
-        if (newp.length < 4) { showNotification("Min 4 characters", true); return; }
+        if(curr !== currentUser.password) { showNotification("Wrong password", true); return; }
+        if(newp !== conf) { showNotification("Passwords don't match", true); return; }
+        if(newp.length < 4) { showNotification("Min 4 characters", true); return; }
         currentUser.password = newp;
         const idx = users.findIndex(u => u.username === currentUser.username);
-        if (idx !== -1) users[idx].password = newp;
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+        if(idx !== -1) users[idx].password = newp;
+        saveUsers();
         document.getElementById('passwordModal').style.display = 'none';
         showNotification("Password changed", false);
     };
     document.getElementById('cancelPasswordBtn').onclick = () => document.getElementById('passwordModal').style.display = 'none';
+    document.getElementById('logoutBtn').onclick = () => {
+        sessionStorage.clear();
+        currentUser = null;
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('mainContainer').style.display = 'none';
+        cancelEditMode();
+    };
     
-    // Menu dropdown
+    // Menu toggle
     const menuBtn = document.getElementById('menuBtn');
     const dropdown = document.getElementById('dropdownMenu');
-    menuBtn.onclick = (e) => {
-        e.stopPropagation();
-        dropdown.classList.toggle('show');
-    };
-    window.onclick = (e) => {
-        if (menuBtn && dropdown && !menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.classList.remove('show');
-        }
-    };
+    if(menuBtn) {
+        menuBtn.onclick = (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('show');
+        };
+        window.onclick = (e) => {
+            if(menuBtn && dropdown && !menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('show');
+            }
+        };
+    }
     
-    // Search/Filter panels
+    // Panel toggles
     const searchPanel = document.getElementById('searchPanel');
     const filterPanel = document.getElementById('filterPanel');
     document.getElementById('searchPanelBtn').onclick = () => {
         searchPanel.classList.toggle('active');
         filterPanel.classList.remove('active');
-        dropdown.classList.remove('show');
+        if(dropdown) dropdown.classList.remove('show');
     };
     document.getElementById('filterPanelBtn').onclick = () => {
         filterPanel.classList.toggle('active');
         searchPanel.classList.remove('active');
-        dropdown.classList.remove('show');
+        if(dropdown) dropdown.classList.remove('show');
         setTimeout(updateFilterUI, 50);
     };
     
     // Initialize
-    initUsers();
+    loadUsers();
     
     // Check authentication
     const logged = sessionStorage.getItem('usFiberLoggedIn') === 'true';
     const saved = sessionStorage.getItem('currentUser');
-    if (logged && saved) {
-        currentUser = JSON.parse(saved);
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('mainContainer').style.display = 'block';
-        document.getElementById('userInfoDisplay').innerHTML = currentUser.username + (currentUser.isAdmin ? ' (Admin)' : '');
-        document.getElementById('userManagementBtn').style.display = currentUser.isAdmin ? 'block' : 'none';
-        loadFromLocalStorage();
+    if(logged && saved) {
+        try {
+            currentUser = JSON.parse(saved);
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+            document.getElementById('userInfoDisplay').innerHTML = currentUser.username + (currentUser.isAdmin ? ' 👑 (Admin)' : '');
+            updateMenuVisibility();
+            loadFromLocalStorage();
+            setTimeout(() => { loadFromGoogleSheet(); }, 500);
+        } catch(e) {
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('mainContainer').style.display = 'none';
+        }
     } else {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('mainContainer').style.display = 'none';
-        // Pre-fill for convenience
-        document.getElementById('loginUsername').value = 'admin';
-        document.getElementById('loginPassword').value = 'admin123';
     }
 </script>
 </body>
