@@ -61,6 +61,8 @@
         .select-all-row { background: #1e4a6e; margin-bottom: 10px; padding: 8px 12px; border-radius: 12px; display: flex; align-items: center; gap: 10px; }
         .select-all-row input { width: auto; margin: 0; }
         .select-all-row label { margin: 0; cursor: pointer; }
+        .reset-pwd-btn { background: linear-gradient(135deg, #ff9800, #f57c00); margin-top: 10px; }
+        .reset-pwd-btn:hover { background: linear-gradient(135deg, #f57c00, #e65100); }
         @media (max-width: 1000px) { .left-section, .table-section { min-width: 100%; } }
     </style>
 </head>
@@ -71,7 +73,9 @@
         <div class="form-group"><label>Username</label><input type="text" id="loginUsername" placeholder="Username"></div>
         <div class="form-group"><label>Password</label><input type="password" id="loginPassword" placeholder="Password"></div>
         <button id="loginBtn" style="width:100%;">Login</button>
+        <button id="resetPasswordBtn" class="reset-pwd-btn" style="width:100%;">🔄 Reset Admin Password</button>
         <p id="loginMessage" style="color:#ffaa88; margin-top:12px; text-align:center; display:none;">Invalid credentials (use admin / admin123)</p>
+        <p id="resetMessage" style="color:#8effa0; margin-top:12px; text-align:center; display:none;">✅ Password reset to admin123!</p>
     </div>
 </div>
 
@@ -185,10 +189,9 @@
 
 <script>
     // ============================================================
-    // FIXED - CLOUD SYNC WORKING VERSION
+    // FIXED - CLOUD SYNC WORKING VERSION WITH RESET BUTTON
     // ============================================================
     
-    // Default Google Sheets URL - Apni URL yahan paste karein
     const DEFAULT_GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycby5cKvAotWc-5S2yDbH5GmPIhXefW_8VcMAeGo5hn-RGBP_Jo1SXUZonLA-DynGdtM/exec";
     
     let data = [], editingIndex = -1, editingCustomerSerial = null, selectedRowsSet = new Set(), currentUser = null, users = [];
@@ -231,6 +234,25 @@
         saveUsers(); 
     }
     
+    // Reset Admin Password Function
+    function resetAdminPassword() {
+        const adminIndex = users.findIndex(u => u.username === 'admin');
+        if(adminIndex !== -1) {
+            users[adminIndex].password = "admin123";
+            saveUsers();
+            const resetMsg = document.getElementById('resetMessage');
+            if(resetMsg) {
+                resetMsg.style.display = 'block';
+                setTimeout(() => { resetMsg.style.display = 'none'; }, 3000);
+            }
+            showNotification("✅ Admin password reset to admin123!", false);
+        } else {
+            users.push({ username: "admin", password: "admin123", isAdmin: true });
+            saveUsers();
+            showNotification("✅ Admin user created with password admin123!", false);
+        }
+    }
+    
     function updateMenuVisibility() {
         const isAdmin = currentUser?.isAdmin === true;
         const userBtn = document.getElementById('userManagementBtn');
@@ -240,7 +262,7 @@
     }
     
     // ============================================================
-    // AUTO SYNC TO GOOGLE SHEET - WORKING
+    // AUTO SYNC TO GOOGLE SHEET
     // ============================================================
     async function autoSyncToGoogleSheet() {
         const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
@@ -261,11 +283,6 @@
             }
         } catch(err) { 
             console.error("Auto sync error:", err);
-            const syncDiv = document.getElementById('syncStatus');
-            if(syncDiv) { 
-                syncDiv.innerHTML = '⚠️ Cloud error: ' + err.message; 
-                syncDiv.className = 'sync-status error'; 
-            }
         }
     }
     
@@ -285,7 +302,7 @@
         const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
         if(!url || url === "") { 
             const sd = document.getElementById('syncStatus'); 
-            if(sd){ sd.innerHTML = '⚠️ No Google Sheets URL configured. Click Setup.'; sd.className = 'sync-status error'; } 
+            if(sd){ sd.innerHTML = '⚠️ No Google Sheets URL configured.'; sd.className = 'sync-status error'; } 
             return false; 
         }
         const syncDiv = document.getElementById('syncStatus');
@@ -338,7 +355,7 @@
                 await loadFromGoogleSheet();
                 return true;
             } else {
-                showNotification("❌ Connection failed: " + JSON.stringify(result), true);
+                showNotification("❌ Connection failed", true);
                 return false;
             }
         } catch(err) {
@@ -608,15 +625,10 @@
         const currentMonth = monthNames[now.getMonth()];
         const currentYear = now.getFullYear();
         const currentCustomers = data.filter(c => !c.isNextMonthPending);
-        const totalFees = currentCustomers.reduce((s,c)=>s+c.fees,0);
-        const totalReceived = currentCustomers.reduce((s,c)=>s+c.received,0);
-        const totalPending = currentCustomers.reduce((s,c)=>s+c.pending,0);
-        
         let csv = "Name,Phone,Fees,Received,Pending,Day,Status\n";
         currentCustomers.forEach(c => {
             csv += `"${c.name}",${c.phone || ''},${c.fees},${c.received},${c.pending},${c.day},${c.isNextMonthPending ? "Next" : "Current"}\n`;
         });
-        
         const blob = new Blob([csv], { type: "text/csv" });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -782,6 +794,7 @@
     // EVENT LISTENERS
     // ============================================================
     document.getElementById('loginBtn').onclick = handleLogin;
+    document.getElementById('resetPasswordBtn').onclick = resetAdminPassword;
     document.getElementById('loginPassword').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleLogin(); });
     
     document.getElementById('dataForm').addEventListener('submit', (e) => { e.preventDefault(); if(editingIndex === -1) addNewEntry(); else updateEntryFromEdit(); });
