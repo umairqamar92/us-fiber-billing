@@ -3,594 +3,1263 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>US Fiber Net | Delete Working 100%</title>
+    <title>US Fiber Net | Premium Billing + Cloud Sync</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background: linear-gradient(135deg, #0a2f44, #071a24); color: #fff; min-height: 100vh; padding: 20px; }
-        .container { max-width: 1600px; margin: 0 auto; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding: 18px 28px; background: rgba(0,0,0,0.55); backdrop-filter: blur(12px); border-radius: 28px; border: 1px solid rgba(0,200,255,0.25); position: relative; z-index: 1000; }
-        .header-center h1 { font-size: 2rem; background: linear-gradient(135deg, #00e0ff, #0099cc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .user-info { background: rgba(0,0,0,0.4); padding: 8px 18px; border-radius: 40px; font-size: 0.85rem; }
-        .menu-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 10px 24px; border-radius: 40px; cursor: pointer; }
-        .dropdown-menu { position: absolute; top: 60px; right: 0; background: #0c1e2c; backdrop-filter: blur(20px); border-radius: 20px; padding: 12px 0; min-width: 250px; display: none; z-index: 99999; border: 1px solid #2c6e8f; box-shadow: 0 20px 35px rgba(0,0,0,0.6); }
-        .dropdown-menu.show { display: block; }
-        .dropdown-menu button { background: none; border: none; color: #eef5ff; padding: 12px 24px; width: 100%; text-align: left; cursor: pointer; }
-        .dropdown-menu button:hover { background: #2a7faa80; }
-        .main-content { display: flex; gap: 28px; flex-wrap: wrap; }
-        .left-section { flex: 1.2; min-width: 320px; display: flex; flex-direction: column; gap: 24px; }
-        .form-section, .customer-info-section, .stats-section { background: rgba(12,34,48,0.75); backdrop-filter: blur(8px); border-radius: 28px; padding: 24px; border: 1px solid #3a7b9a; }
-        .table-section { flex: 2.5; min-width: 700px; background: rgba(12,34,48,0.75); backdrop-filter: blur(8px); border-radius: 28px; padding: 24px; overflow-x: auto; }
-        h2 { margin-bottom: 20px; border-left: 5px solid #00e0ff; padding-left: 16px; color: #cceeff; }
-        .form-group { margin-bottom: 18px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.8rem; }
-        input, select { width: 100%; padding: 12px 16px; border: none; border-radius: 18px; background: #f4f9fe; font-size: 0.9rem; color: #0a2a36; }
-        input:focus { outline: none; box-shadow: 0 0 0 3px #00c8ff80; }
-        .button-group { display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap; }
-        button { background: linear-gradient(135deg, #0099cc, #006699); border: none; padding: 10px 22px; border-radius: 40px; color: white; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        button:hover { transform: translateY(-2px); filter: brightness(1.05); }
-        .edit-btn { background: linear-gradient(135deg, #ff9800, #f57c00); }
-        .delete-btn { background: linear-gradient(135deg, #e53935, #c62828); }
-        .whatsapp-btn { background: linear-gradient(135deg, #25D366, #128C7E); }
-        .sms-btn { background: linear-gradient(135deg, #2196F3, #0b5e9e); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #3e7b9a; }
-        th { background: #1e4a6e50; color: #b3e4ff; }
-        tr:hover { background: #2a6f8f40; }
-        .stat-card { background: rgba(0,0,0,0.35); padding: 14px; border-radius: 20px; text-align: center; }
-        .stat-value { font-size: 1.8rem; font-weight: 800; color: #5dc9ff; }
-        .pending-value { color: #ffaa66; }
-        .received-value { color: #8effa0; }
-        .badge-next { background: #ff9800; color: #1e2a2f; padding: 2px 10px; border-radius: 30px; font-size: 0.7rem; font-weight: bold; }
-        .modal, .login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 999999; }
-        .login-form, .modal-content { background: linear-gradient(145deg, #102c3c, #08212e); padding: 40px; border-radius: 40px; width: 90%; max-width: 400px; border: 1px solid #00c8ff; }
-        .notification { position: fixed; bottom: 20px; right: 20px; background: #2e7d32; padding: 14px 28px; border-radius: 60px; transform: translateX(200%); transition: 0.3s; z-index: 9999999; font-weight: 600; }
-        .notification.show { transform: translateX(0); }
-        .notification.error { background: #d32f2f; }
-        .floating-panel { background: #0c2a38; border-radius: 28px; padding: 20px; margin-bottom: 20px; border: 1px solid #00aaff; display: none; }
-        .floating-panel.active { display: block; }
-        .inline-flex-group { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
-        .flex-grow { flex: 2; min-width: 180px; }
-        .stats-grid { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
-        .stats-grid .stat-card { flex: 1; min-width: 140px; }
-        .sync-status { font-size: 0.75rem; margin-top: 10px; padding: 8px; border-radius: 20px; text-align: center; }
-        .sync-status.success { background: #2e7d3220; color: #8effa0; }
-        .sync-status.loading { background: #ff980020; color: #ffaa66; }
-        .sync-status.error { background: #d32f2f20; color: #ffaa88; }
-        @media (max-width: 1000px) { .left-section, .table-section { min-width: 100%; } }
-        .admin-only { display: none; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, 'Roboto', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a2f44, #071a24);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 18px 28px;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(12px);
+            border-radius: 28px;
+            border: 1px solid rgba(0, 200, 255, 0.35);
+            position: relative;
+            z-index: 100;
+        }
+
+        .header-center h1 {
+            font-size: 1.9rem;
+            background: linear-gradient(135deg, #00e0ff, #0099cc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .user-info {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .menu-container {
+            position: relative;
+            z-index: 9999;
+        }
+
+        .menu-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 600;
+        }
+
+        .menu-btn:hover {
+            background: #00aaff50;
+            transform: scale(0.98);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 55px;
+            right: 0;
+            background: #0c1e2c;
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 10px 0;
+            min-width: 270px;
+            display: none;
+            z-index: 999999;
+            border: 1px solid #2c6e8f;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.8);
+        }
+
+        .dropdown-menu.show {
+            display: block;
+            animation: fadeSlide 0.2s ease;
+        }
+
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-menu button {
+            background: none;
+            border: none;
+            color: #eef5ff;
+            padding: 12px 24px;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        .dropdown-menu button:hover {
+            background: #2a7faa80;
+            padding-left: 32px;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 28px;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        .left-section {
+            flex: 1.2;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .form-section,
+        .customer-info-section,
+        .stats-section {
+            background: rgba(12, 34, 48, 0.75);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            padding: 24px;
+            border: 1px solid #3a7b9a;
+        }
+
+        .table-section {
+            flex: 2.5;
+            min-width: 700px;
+            background: rgba(12, 34, 48, 0.75);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            padding: 24px;
+            overflow-x: auto;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            border-left: 5px solid #00e0ff;
+            padding-left: 16px;
+            color: #cceeff;
+            font-size: 1.25rem;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 18px;
+            background: #f4f9fe;
+            font-size: 0.9rem;
+            color: #0a2a36;
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px #00c8ff80;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #0099cc, #006699);
+            border: none;
+            padding: 10px 22px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }
+
+        .edit-btn {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+        }
+
+        .delete-btn {
+            background: linear-gradient(135deg, #e53935, #c62828);
+        }
+
+        .whatsapp-btn {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+        }
+
+        .sms-btn {
+            background: linear-gradient(135deg, #2196F3, #0b5e9e);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        th,
+        td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #3e7b9a;
+        }
+
+        th {
+            background: #1e4a6e50;
+            color: #b3e4ff;
+        }
+
+        tr:hover {
+            background: #2a6f8f40;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.35);
+            padding: 14px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #5dc9ff;
+        }
+
+        .pending-value {
+            color: #ffaa66;
+        }
+
+        .received-value {
+            color: #8effa0;
+        }
+
+        .badge-next {
+            background: #ff9800;
+            color: #1e2a2f;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .modal,
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000000;
+        }
+
+        .login-form,
+        .modal-content {
+            background: linear-gradient(145deg, #102c3c, #08212e);
+            padding: 40px;
+            border-radius: 40px;
+            width: 90%;
+            max-width: 420px;
+            border: 1px solid #00c8ff;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2e7d32;
+            padding: 14px 28px;
+            border-radius: 60px;
+            transform: translateX(200%);
+            transition: 0.3s;
+            z-index: 1000001;
+            font-weight: 600;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: #d32f2f;
+        }
+
+        .floating-panel {
+            background: #0c2a38;
+            border-radius: 28px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #00aaff;
+            display: none;
+            position: relative;
+            z-index: 10;
+        }
+
+        .floating-panel.active {
+            display: block;
+            animation: fadeSlide 0.3s ease;
+        }
+
+        .inline-flex-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .flex-grow {
+            flex: 2;
+            min-width: 180px;
+        }
+
+        .stats-grid {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid .stat-card {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .sync-status {
+            font-size: 0.75rem;
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .sync-status.success {
+            background: #2e7d3220;
+            color: #8effa0;
+        }
+
+        .sync-status.loading {
+            background: #ff980020;
+            color: #ffaa66;
+        }
+
+        .sync-status.error {
+            background: #d32f2f20;
+            color: #ffaa88;
+        }
+
+        .select-all-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 40px;
+            width: fit-content;
+        }
+
+        .select-all-wrapper input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .select-all-wrapper label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        @media (max-width: 1000px) {
+
+            .left-section,
+            .table-section {
+                min-width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
-<div class="login-screen" id="loginScreen">
-    <div class="login-form">
-        <h2 style="margin-bottom:20px; text-align:center;">US Fiber Net</h2>
-        <div class="form-group"><label>Username</label><input type="text" id="loginUsername" placeholder="Username"></div>
-        <div class="form-group"><label>Password</label><input type="password" id="loginPassword" placeholder="Password"></div>
-        <button id="loginBtn" style="width:100%;">Login</button>
-        <p id="loginMessage" style="color:#ffaa88; margin-top:12px; text-align:center; display:none;">Invalid credentials</p>
+    <div class="login-screen" id="loginScreen">
+        <div class="login-form">
+            <h2 style="margin-bottom:20px; text-align:center;">US Fiber Net</h2>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="loginUsername" placeholder="Username">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Password">
+            </div>
+            <button id="loginBtn" style="width:100%;">Login</button>
+            <button id="resetPasswordLoginBtn" style="width:100%; margin-top:12px; background:#ff9800;">Reset Default Password</button>
+            <p id="loginMessage" style="color:#ffaa88; margin-top:12px; text-align:center; display:none;">Invalid credentials</p>
+        </div>
     </div>
-</div>
 
-<div class="container" style="display:none;" id="mainContainer">
-    <header>
-        <div class="header-center"><h1>US Fiber Net</h1><p>Delete Working 100% • Full Cloud Sync</p></div>
-        <div style="display:flex; align-items:center; gap:15px; position:relative;">
-            <div class="user-info" id="userInfoDisplay"></div>
-            <div style="position:relative;">
-                <button class="menu-btn" id="menuBtn">☰ Menu ▼</button>
-                <div class="dropdown-menu" id="dropdownMenu">
-                    <button id="searchPanelBtn">🔍 Search Panel</button>
-                    <button id="filterPanelBtn">⚙️ Filter Panel</button>
-                    <button id="backupJsonBtn">📁 Backup (JSON)</button>
-                    <button id="restoreBtn">📂 Restore Data</button>
-                    <button id="reportBtn">📊 Monthly Report</button>
-                    <button id="setupSheetBtn">📎 Setup Google Sheets</button>
-                    <button id="manualSyncBtn">☁️ Manual Sync</button>
-                    <button id="userManagementBtn" class="admin-only">👥 User Management</button>
-                    <button id="changePasswordBtn">🔒 Change Password</button>
-                    <button id="allResetBtn" class="admin-only">🔄 All Reset</button>
-                    <button id="logoutBtn">🚪 Logout</button>
+    <div class="container" style="display:none;" id="mainContainer">
+        <header>
+            <div class="header-center">
+                <h1>US Fiber Net</h1>
+                <p>Smart Billing • Auto + Manual Cloud Sync</p>
+            </div>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <div class="user-info" id="userInfoDisplay"></div>
+                <div class="menu-container">
+                    <button class="menu-btn" id="menuBtn">☰ Menu ▼</button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <button id="searchPanelBtn">🔍 Search Panel</button>
+                        <button id="filterPanelBtn">⚙️ Filter Panel</button>
+                        <button id="backupJsonBtn">📁 Backup (JSON)</button>
+                        <button id="restoreBtn">📂 Restore Data</button>
+                        <button id="reportBtn">📊 Professional Report</button>
+                        <button id="cloudSetupBtn">☁️ Cloud Setup</button>
+                        <button id="saveCloudBtn">💾 Save to Cloud</button>
+                        <button id="loadCloudBtn">📥 Load from Cloud</button>
+                        <button id="changePasswordBtn">🔒 Change Password</button>
+                        <button id="allResetBtn">🔄 All Reset (Special)</button>
+                        <button id="logoutBtn">🚪 Logout</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="notification" id="notification"></div>
+        <input type="file" id="restoreFile" accept=".json" style="display:none;">
+
+        <!-- Search Panel -->
+        <div id="searchPanel" class="floating-panel">
+            <h3>🔎 Search Customer</h3>
+            <div class="inline-flex-group">
+                <div class="flex-grow">
+                    <label>Search By</label>
+                    <select id="searchField">
+                        <option value="name">Name</option>
+                        <option value="phone">Phone Number</option>
+                    </select>
+                </div>
+                <div class="flex-grow">
+                    <label>Value</label>
+                    <input type="text" id="searchValue" placeholder="Enter name or phone" autocomplete="off">
+                </div>
+                <div>
+                    <button id="doSearchBtn">Search</button>
+                    <button id="clearSearchBtn" style="background:#f44336;">Clear</button>
                 </div>
             </div>
         </div>
-    </header>
-    <div class="notification" id="notification"></div>
-    <input type="file" id="restoreFile" accept=".json" style="display:none;">
 
-    <div id="searchPanel" class="floating-panel">
-        <h3>🔎 Search Customer</h3>
-        <div class="inline-flex-group">
-            <div class="flex-grow"><label>Search By</label><select id="searchField"><option value="name">Name</option><option value="phone">Phone Number</option></select></div>
-            <div class="flex-grow"><label>Value</label><input type="text" id="searchValue" placeholder="Enter name or phone"></div>
-            <div><button id="doSearchBtn">Search</button><button id="clearSearchBtn" style="background:#f44336;">Clear</button></div>
-        </div>
-    </div>
-
-    <div id="filterPanel" class="floating-panel">
-        <h3>⚙️ Advanced Filter</h3>
-        <div class="inline-flex-group">
-            <div class="flex-grow"><label>Filter By</label><select id="filterTypeSelect">
-                <option value="pending">Pending Amount</option><option value="received">Received Amount</option>
-                <option value="agent">Agent</option><option value="day">Due Day</option>
-            </select></div>
-            <div class="flex-grow" id="filterValueContainer"><label>Value</label><input type="text" id="filterValueInput" placeholder="e.g., >0, =0"></div>
-            <div><button id="doFilterBtn">Apply Filter</button><button id="clearFilterBtn" style="background:#f44336;">Clear</button></div>
-        </div>
-    </div>
-
-    <div class="main-content">
-        <div class="left-section">
-            <div class="form-section">
-                <h2>Add/Edit Customer <span id="editingBadge" style="display:none; background:#00c8ff; padding:2px 12px; border-radius:40px; font-size:0.7rem;">EDIT MODE</span></h2>
-                <form id="dataForm">
-                    <div class="form-group"><label>Full Name *</label><input type="text" id="name" placeholder="Customer name" required></div>
-                    <div class="form-group"><label>Phone</label><input type="tel" id="phone" placeholder="+923001234567"></div>
-                    <div class="form-group"><label>Monthly Fees</label><input type="number" id="fees" step="0.01" placeholder="Amount" required></div>
-                    <div class="form-group"><label>Received Amount</label><input type="number" id="received" step="0.01" placeholder="Received" value=""></div>
-                    <div class="form-group"><label>Due Day</label><select id="day" required><option value="">Select</option><option>1</option><option>5</option><option>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option>31</option></select></div>
-                    <div class="button-group"><button type="submit" id="addBtn">Add Entry</button><button type="button" id="sendSmsBtn" class="sms-btn">SMS Receipt</button><button type="button" id="sendWhatsAppBtn" class="whatsapp-btn">WhatsApp Receipt</button></div>
-                    <div class="button-group" id="editActionGroup" style="display:none;"><button type="button" id="updateBtn">Update Changes</button><button type="button" id="cancelBtn">Cancel Edit</button></div>
-                </form>
-            </div>
-            <div class="customer-info-section"><h2>👤 Customer Details</h2><div id="customerDetails" style="padding:18px; background:rgba(0,0,0,0.3); border-radius:24px; min-height:160px;">Click Edit on any customer</div></div>
-            <div class="stats-section">
-                <h2>📊 Dashboard</h2>
-                <div class="stats-grid"><div class="stat-card"><div>Total</div><div class="stat-value" id="totalCustomersCount">0</div></div><div class="stat-card"><div>Pending</div><div class="stat-value pending-value" id="pendingCustomersCount">0</div></div><div class="stat-card"><div>Received</div><div class="stat-value received-value" id="receivedCustomersCount">0</div></div><div class="stat-card"><div>Next Month</div><div class="stat-value" id="nextMonthCustomersCount">0</div></div></div>
-                <div id="syncStatus" class="sync-status">🔄 Ready...</div>
+        <!-- Filter Panel -->
+        <div id="filterPanel" class="floating-panel">
+            <h3>⚙️ Advanced Filter</h3>
+            <div class="inline-flex-group">
+                <div class="flex-grow">
+                    <label>Filter By</label>
+                    <select id="filterTypeSelect">
+                        <option value="pending">Pending Amount</option>
+                        <option value="received">Received Amount</option>
+                        <option value="agent">Agent</option>
+                        <option value="day">Due Day</option>
+                    </select>
+                </div>
+                <div class="flex-grow" id="filterValueContainer">
+                    <label>Value (e.g., >0, =0)</label>
+                    <input type="text" id="filterValueInput" placeholder=">0 , =0 or exact" autocomplete="off">
+                </div>
+                <div>
+                    <button id="doFilterBtn">Apply Filter</button>
+                    <button id="clearFilterBtn" style="background:#f44336;">Clear</button>
+                </div>
             </div>
         </div>
-        <div class="table-section">
-            <div style="display:flex; justify-content:space-between; flex-wrap:wrap;"><h2>Customer Records</h2><div id="tableActionButtons" style="display:none; gap:8px;"><span id="selectionCountText">0 selected</span><button id="tableDeleteBtn" class="delete-btn">Delete</button><button id="tableResetCustomerBtn">Reset Payment</button><button id="tableNextMonthBtn">Next Month</button><button id="tableUnmarkNextMonthBtn" style="background:#ff9800;">Remove Mark</button></div></div>
-            <div><input type="checkbox" id="selectAllCheckbox"><label> Select All</label></div>
-            <div style="overflow-x:auto;"><table id="dataTable"><thead><tr><th></th><th>Day</th><th>Name</th><th>Phone</th><th>Fees</th><th>Received</th><th>Pending</th><th>Receipt</th><th>Agent</th><th>Status</th><th>Actions</th></tr></thead><tbody id="tableBody"></tbody></table></div>
+
+        <div class="main-content">
+            <div class="left-section">
+                <div class="form-section">
+                    <h2>Add/Edit Customer <span id="editingBadge" style="display:none; background:#00c8ff; padding:2px 12px; border-radius:40px; font-size:0.7rem;">EDIT MODE</span></h2>
+                    <form id="dataForm">
+                        <div class="form-group"><label>Full Name *</label><input type="text" id="name" placeholder="Customer name" required></div>
+                        <div class="form-group"><label>Phone (WhatsApp/SMS)</label><input type="tel" id="phone" placeholder="+923001234567"></div>
+                        <div class="form-group"><label>Monthly Fees</label><input type="number" id="fees" step="0.01" placeholder="Amount" required></div>
+                        <div class="form-group"><label>Received Amount</label><input type="number" id="received" step="0.01" placeholder="Received" value=""></div>
+                        <div class="form-group"><label>Due Day</label><select id="day" required><option value="">Select</option><option>1</option><option>5</option><option>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option>31</option></select></div>
+                        <div class="button-group"><button type="submit" id="addBtn">Add Entry</button><button type="button" id="sendSmsBtn" class="sms-btn">SMS Receipt</button><button type="button" id="sendWhatsAppBtn" class="whatsapp-btn">WhatsApp Receipt</button></div>
+                        <div class="button-group" id="editActionGroup" style="display:none;"><button type="button" id="updateBtn">Update Changes</button><button type="button" id="cancelBtn">Cancel Edit</button></div>
+                    </form>
+                </div>
+                <div class="customer-info-section">
+                    <h2>👤 Customer Details</h2>
+                    <div id="customerDetails" style="padding:18px; background:rgba(0,0,0,0.3); border-radius:24px; min-height:160px;">Click Edit on any customer</div>
+                </div>
+                <div class="stats-section">
+                    <h2>📊 Dashboard</h2>
+                    <div class="stats-grid"><div class="stat-card"><div>Total Customers</div><div class="stat-value" id="totalCustomersCount">0</div></div><div class="stat-card"><div>Pending Cust</div><div class="stat-value pending-value" id="pendingCustomersCount">0</div></div><div class="stat-card"><div>Received Cust</div><div class="stat-value received-value" id="receivedCustomersCount">0</div></div><div class="stat-card"><div>Next Month</div><div class="stat-value" id="nextMonthCustomersCount">0</div></div></div>
+                    <div class="stats-grid"><div class="stat-card"><div>Total Fees</div><div class="stat-value" id="totalFeesAmount">0</div></div><div class="stat-card"><div>Pending Fees</div><div class="stat-value pending-value" id="pendingFeesAmount">0</div></div><div class="stat-card"><div>Received Fees</div><div class="stat-value received-value" id="receivedFeesAmount">0</div></div><div class="stat-card"><div>Next Month Fees</div><div class="stat-value" id="nextMonthFeesAmount">0</div></div></div>
+                    <div id="syncStatus" class="sync-status">✅ System Ready</div>
+                </div>
+            </div>
+            <div class="table-section">
+                <div style="display:flex; justify-content:space-between; flex-wrap:wrap; margin-bottom:15px;">
+                    <h2>Customer Records</h2>
+                    <div id="tableActionButtons" style="display:none; gap:8px;">
+                        <span id="selectionCountText" style="background:#0099cc40; padding:6px 16px; border-radius:30px;">0 selected</span>
+                        <button id="tableDeleteBtn" class="delete-btn">Delete</button>
+                        <button id="tableResetCustomerBtn" class="reset-customer-btn">Reset Payment</button>
+                        <button id="tableNextMonthBtn" class="next-month-mark-btn">Next Month</button>
+                        <button id="tableUnmarkNextMonthBtn" style="background:#ff9800;">Remove Mark</button>
+                    </div>
+                </div>
+                <div class="select-all-wrapper">
+                    <input type="checkbox" id="selectAllCheckbox"> <label>Select All</label>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table id="dataTable">
+                        <thead>
+                            <tr><th></th><th>Day</th><th>Name</th><th>Phone</th><th>Fees</th><th>Received</th><th>Pending</th><th>Receipt No.</th><th>Agent/Date</th><th>Status</th><th>Actions</th>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="modal" id="sheetModal" style="display:none;">
-    <div class="modal-content"><h2>📎 Google Sheets Setup</h2>
-        <div class="form-group"><label>Web App URL</label><input type="text" id="sheetWebAppUrl"></div>
-        <button id="saveSheetSettings">Save</button>
-        <button id="closeSheetModal" style="background:#666;">Close</button>
+    <!-- Cloud Setup Modal -->
+    <div class="modal" id="sheetModal" style="display:none;">
+        <div class="modal-content" style="max-width:550px;">
+            <h2>☁️ Cloud Setup (Google Sheets)</h2>
+            <p style="margin-bottom:15px;">Paste your Google Apps Script Web App URL below. Auto-sync works automatically.</p>
+            <div class="form-group"><label>Web App URL</label><input type="text" id="sheetWebAppUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
+            <button id="saveSheetSettings">Save & Test Connection</button>
+            <button id="closeSheetModal" style="background:#666; margin-top:10px;">Close</button>
+            <hr style="margin:15px 0;">
+            <details>
+                <summary>📘 Step-by-Step: Google Sheets Setup (Copy/Follow)</summary>
+                <div style="background:#1e2a2f; padding:12px; border-radius:12px; font-size:12px; margin-top:8px;">
+                    <b>1.</b> Create new Google Sheet → Extensions → Apps Script.<br>
+                    <b>2.</b> Delete default code and paste the code given below.<br>
+                    <b>3.</b> Click Deploy → New Deployment → Web app → Execute as "Me", access "Anyone".<br>
+                    <b>4.</b> Copy the generated URL and paste in above field & Save.<br>
+                    <b>5.</b> <span style="color:#8effa0;">DEFAULT URL already pre-filled for testing (you can replace).</span><br>
+                    <pre style="background:#00000060; padding:8px; border-radius:8px; overflow-x:auto; font-size:10px;">
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const data = JSON.parse(e.postData.contents);
+  if(sheet.getLastRow() === 0) sheet.appendRow(["Serial","Name","Phone","Fees","Received","Pending","Day","Token","Agent","Status","LastUpdated"]);
+  data.forEach(c => sheet.appendRow([c.serial,c.name,c.phone,c.fees,c.received,c.pending,c.day,c.token,c.receivedBy,c.isNextMonthPending?"Next Month":"Current",c.lastUpdated]));
+  return ContentService.createTextOutput(JSON.stringify({status:"success"}));
+}
+function doGet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const lastRow = sheet.getLastRow();
+  if(lastRow <= 1) return ContentService.createTextOutput(JSON.stringify({status:"empty",data:[]}));
+  const values = sheet.getRange(2,1,lastRow-1,11).getValues();
+  const customers = values.map(row => ({serial:row[0],name:row[1],phone:row[2],fees:row[3],received:row[4],pending:row[5],day:row[6],token:row[7],receivedBy:row[8],isNextMonthPending:row[9]==="Next Month",lastUpdated:row[10]}));
+  const unique = [];
+  const seen = new Set();
+  for(let i=customers.length-1;i>=0;i--) if(!seen.has(customers[i].serial)) { seen.add(customers[i].serial); unique.unshift(customers[i]); }
+  return ContentService.createTextOutput(JSON.stringify({status:"success",data:unique}));
+}
+                    </pre>
+                </div>
+            </details>
+        </div>
     </div>
-</div>
-<div class="modal" id="userModal" style="display:none;"><div class="modal-content"><h2>User Management</h2>
-    <div class="form-group"><label>Username</label><input id="newUsername"></div>
-    <div class="form-group"><label>Password</label><input type="password" id="newUserPassword"></div>
-    <button id="createUserBtn">Create</button>
-    <div id="userListContainer"></div>
-    <button id="closeUserModalBtn">Close</button>
-</div></div>
-<div class="modal" id="passwordModal" style="display:none;"><div class="modal-content"><h2>Change Password</h2>
-    <div class="form-group"><label>Current</label><input type="password" id="currentPassword"></div>
-    <div class="form-group"><label>New</label><input type="password" id="newPassword"></div>
-    <div class="form-group"><label>Confirm</label><input type="password" id="confirmPassword"></div>
-    <button id="savePasswordBtn">Save</button>
-    <button id="cancelPasswordBtn">Cancel</button>
-</div></div>
 
-<script>
-    // ✅ YOUR NEW GOOGLE SHEETS URL IS NOW SET AS DEFAULT ✅
-    const DEFAULT_GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbw8ZL3EJqrp6iSACXR6PwaN-I5vHlrZuKLGilC0FXvX3SvWeHgQxo85nWOlFdg9LLY/exec";
-    
-    let data = [], editingIndex = -1, selectedRowsSet = new Set(), currentUser = null, users = [];
-    let activeSearch = { field: "", value: "" };
-    let activeFilter = { type: "", value: "" };
-    const STORAGE_KEY = "customers", USERS_KEY = "users";
-    
-    function showNotification(msg, isError = false) {
-        const n = document.getElementById('notification');
-        n.textContent = msg;
-        n.classList.add('show');
-        if(isError) n.classList.add('error');
-        else n.classList.remove('error');
-        setTimeout(() => n.classList.remove('show'), 3000);
-    }
-    
-    function formatAmount(amt) { return parseFloat(amt).toFixed(2); }
-    function generateReceiptNumber() { return "USF-" + Date.now().toString().slice(-8); }
-    
-    // ========== CLOUD SYNC ==========
-    async function syncToCloud() {
-        const url = localStorage.getItem("sheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
-        if(!url) { console.log("No URL"); return false; }
-        try {
-            const response = await fetch(url, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(data) 
-            });
-            const result = await response.json();
-            console.log("Sync success:", result);
-            if(result.status === "success") {
-                document.getElementById('syncStatus').innerHTML = '✅ Synced: ' + data.length + ' customers';
+    <div class="modal" id="passwordModal" style="display:none;">
+        <div class="modal-content">
+            <h2>Change Password</h2>
+            <div class="form-group"><label>Current Password</label><input type="password" id="currentPassword"></div>
+            <div class="form-group"><label>New Password</label><input type="password" id="newPassword"></div>
+            <div class="form-group"><label>Confirm Password</label><input type="password" id="confirmPassword"></div>
+            <button id="savePasswordBtn">Save</button>
+            <button id="cancelPasswordBtn">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // ================== CONFIGURATION ==================
+        // NEW DEFAULT URL PROVIDED BY USER
+        const DEFAULT_GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbw-h3XPXITCOPDrNuM5-pIfUYOB5OaxnmdCfF04jChY51lUxpwQ8Cb8h6EVcPdCc8Yt/exec";
+        let data = [], editingIndex = -1, selectedRowsSet = new Set(), currentUser = null;
+        let activeSearch = { field: "", value: "" };
+        let activeFilter = { type: "", value: "" };
+        let googleSheetUrl = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
+        const STORAGE_KEY = "usFiberNetFinalV3", USERS_KEY = "usFiberNetUsersFinalV3";
+
+        // 3 agents: admin, umair, saqib
+        let users = [
+            { username: "admin", password: "admin123", role: "admin" },
+            { username: "umair", password: "admin123", role: "agent" },
+            { username: "saqib", password: "admin123", role: "agent" }
+        ];
+
+        function saveUsers() { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+        function loadUsers() { const saved = localStorage.getItem(USERS_KEY); if(saved) users = JSON.parse(saved); else saveUsers(); }
+
+        function showNotification(msg, isError = false) {
+            const n = document.getElementById('notification');
+            n.textContent = msg;
+            n.classList.add('show');
+            if(isError) n.classList.add('error');
+            else n.classList.remove('error');
+            setTimeout(() => n.classList.remove('show'), 3500);
+        }
+
+        function generateReceiptNumber() { return "USF-" + new Date().getFullYear() + String(Math.floor(Math.random() * 9999)).padStart(4,'0'); }
+        function formatAmount(amt) { return Number(amt).toFixed(2); }
+
+        async function autoSyncToGoogleSheet() {
+            const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
+            if(!url || url === "" || data.length === 0) return;
+            try {
+                await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                document.getElementById('syncStatus').innerHTML = '✅ Auto-synced ' + new Date().toLocaleTimeString();
                 document.getElementById('syncStatus').className = 'sync-status success';
-                return true;
-            } else {
-                throw new Error(result.message || "Sync failed");
-            }
-        } catch(err) { 
-            console.error("Sync error:", err);
-            document.getElementById('syncStatus').innerHTML = '⚠️ Sync failed: ' + err.message;
-            document.getElementById('syncStatus').className = 'sync-status error';
-            return false;
+            } catch(e) { console.warn("Auto sync issue", e); }
         }
-    }
-    
-    async function syncUsersToCloud() {
-        const url = localStorage.getItem("sheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
-        if(!url) return;
-        try {
-            await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: "users", users: users }) });
-        } catch(err) { console.error(err); }
-    }
-    
-    async function loadFromCloud() {
-        const url = localStorage.getItem("sheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
-        if(!url) { loadLocalData(); return; }
-        
-        document.getElementById('syncStatus').innerHTML = '🔄 Loading...';
-        document.getElementById('syncStatus').className = 'sync-status loading';
-        
-        try {
-            // Load customers
-            const custRes = await fetch(url);
-            const custData = await custRes.json();
-            if(custData.status === "success" && custData.data) {
-                data = custData.data;
-                data.forEach(d => {
-                    d.isNextMonthPending = d.isNextMonthPending || false;
-                    d.token = d.token || "";
-                    d.receivedBy = d.receivedBy || "";
-                    d.lastUpdated = d.lastUpdated || "";
-                    if(d.pending === undefined) d.pending = (d.fees || 0) - (d.received || 0);
+
+        async function manualSaveToCloud() {
+            const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
+            if(!url) { showNotification("Cloud URL not set! Setup first.", true); return; }
+            showNotification("Saving to cloud...");
+            try {
+                await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                showNotification("Data saved to cloud successfully!");
+            } catch(e) { showNotification("Cloud save error", true); }
+        }
+
+        async function manualLoadFromCloud() {
+            const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
+            if(!url) { showNotification("Cloud URL missing", true); return; }
+            showNotification("Loading from cloud...");
+            try {
+                const resp = await fetch(url);
+                const result = await resp.json();
+                if(result.status === "success" && result.data && result.data.length) {
+                    data = result.data;
+                    data.forEach(c => { 
+                        if(c.isNextMonthPending === undefined) c.isNextMonthPending = false; 
+                        if(!c.token) c.token = ""; 
+                        if(!c.receivedBy) c.receivedBy = ""; 
+                        if(c.pending === undefined) c.pending = (c.fees||0) - (c.received||0); 
+                    });
+                    saveToLocalStorage();
+                    refreshTable();
+                    showNotification("Loaded " + data.length + " customers from cloud.");
+                } else { showNotification("Cloud empty or not reachable", true); }
+            } catch(e) { showNotification("Cloud load error", true); }
+        }
+
+        function saveToLocalStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); autoSyncToGoogleSheet(); }
+
+        // ALL RESET: pending becomes full fees
+        function allResetSpecial() { 
+            if(confirm("⚠️ ALL RESET SPECIAL:\n- All customers: Pending amount = FULL MONTHLY FEES\n- All received amounts become ZERO\n- Receipts cleared\n- Next Month customers become CURRENT\nProceed?")) { 
+                data.forEach(c => { 
+                    c.pending = c.fees;
+                    c.received = 0; 
+                    c.token = ""; 
+                    c.receivedBy = ""; 
+                    c.lastUpdated = ""; 
+                    c.isNextMonthPending = false; 
+                }); 
+                saveToLocalStorage(); 
+                refreshTable(); 
+                showNotification("Special reset completed: All pending = full fees amount"); 
+            } 
+        }
+
+        // Get unique agents from data + also include default agents (admin, umair, saqib)
+        function getAllAgentsList() {
+            const agentsFromData = [...new Set(data.map(c => c.receivedBy).filter(a => a && a.trim()))];
+            const defaultAgents = ['admin', 'umair', 'saqib'];
+            const allAgents = [...new Set([...defaultAgents, ...agentsFromData])];
+            return allAgents;
+        }
+
+        function refreshTable() {
+            let filtered = [...data];
+            if(activeSearch.field && activeSearch.value.trim()) {
+                const val = activeSearch.value.toLowerCase().trim();
+                filtered = filtered.filter(c => activeSearch.field === "name" ? c.name.toLowerCase().includes(val) : (c.phone||"").toLowerCase().includes(val));
+            }
+            if(activeFilter.type && activeFilter.value && activeFilter.value.trim()) {
+                const val = activeFilter.value.trim();
+                filtered = filtered.filter(c => {
+                    if(activeFilter.type === 'pending') { 
+                        if(val === ">0") return c.pending > 0; 
+                        if(val === "=0") return c.pending === 0; 
+                        return c.pending == parseFloat(val); 
+                    }
+                    if(activeFilter.type === 'received') { 
+                        if(val === ">0") return c.received > 0; 
+                        if(val === "=0") return c.received === 0; 
+                        return c.received == parseFloat(val); 
+                    }
+                    if(activeFilter.type === 'agent') return (c.receivedBy || "") === val;
+                    if(activeFilter.type === 'day') return c.day == val;
+                    return true;
                 });
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-            } else {
-                loadLocalData();
             }
             
-            // Load users
-            const userRes = await fetch(url + "?type=users");
-            const userData = await userRes.json();
-            if(userData.status === "success" && userData.data && userData.data.length > 0) {
-                users = userData.data;
-            } else {
-                const saved = localStorage.getItem(USERS_KEY);
-                users = saved ? JSON.parse(saved) : [{ username: "admin", password: "admin123", isAdmin: true }];
-            }
-            localStorage.setItem(USERS_KEY, JSON.stringify(users));
-            
-            refreshTable();
-            document.getElementById('syncStatus').innerHTML = '✅ Loaded: ' + data.length + ' customers';
-            document.getElementById('syncStatus').className = 'sync-status success';
-            showNotification('Loaded ' + data.length + ' customers from cloud');
-        } catch(err) {
-            console.error(err);
-            loadLocalData();
-            document.getElementById('syncStatus').innerHTML = '⚠️ Offline mode - using local data';
-            document.getElementById('syncStatus').className = 'sync-status error';
-            showNotification('Cloud connection failed, using local data', true);
-        }
-    }
-    
-    function loadLocalData() {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if(saved) {
-            data = JSON.parse(saved);
-            data.forEach(d => {
-                d.isNextMonthPending = d.isNextMonthPending || false;
-                if(d.pending === undefined) d.pending = d.fees - d.received;
-            });
-        } else { data = []; }
-        const savedUsers = localStorage.getItem(USERS_KEY);
-        users = savedUsers ? JSON.parse(savedUsers) : [{ username: "admin", password: "admin123", isAdmin: true }];
-        refreshTable();
-    }
-    
-    function saveToLocal() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        syncToCloud(); // This overwrites the sheet with updated data
-    }
-    
-    function saveUsersToLocal() {
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
-        syncUsersToCloud();
-    }
-    
-    // ========== UI FUNCTIONS ==========
-    function refreshTable() {
-        const tbody = document.getElementById('tableBody');
-        if(!tbody) return;
-        tbody.innerHTML = "";
-        
-        let filtered = [...data];
-        if(activeSearch.field && activeSearch.value.trim()) {
-            const val = activeSearch.value.toLowerCase();
-            filtered = filtered.filter(c => activeSearch.field === "name" ? c.name.toLowerCase().includes(val) : (c.phone || "").toLowerCase().includes(val));
-        }
-        if(activeFilter.type && activeFilter.value) {
-            const v = activeFilter.value.trim();
-            filtered = filtered.filter(c => {
-                if(activeFilter.type === 'pending') {
-                    if(v === ">0") return c.pending > 0;
-                    if(v === "=0") return c.pending === 0;
-                    return parseFloat(v) === c.pending;
-                }
-                if(activeFilter.type === 'received') {
-                    if(v === ">0") return c.received > 0;
-                    if(v === "=0") return c.received === 0;
-                    return parseFloat(v) === c.received;
-                }
-                if(activeFilter.type === 'agent') return (c.receivedBy || "") === v;
-                if(activeFilter.type === 'day') return c.day == v;
-                return true;
-            });
-        }
-        
-        if(filtered.length === 0) {
-            const row = tbody.insertRow();
-            row.insertCell(0).colSpan = 11;
-            row.insertCell(0).innerHTML = 'No records';
-            updateDashboard();
-            return;
-        }
-        
-        filtered.forEach(entry => {
-            const row = tbody.insertRow();
-            const chkCell = row.insertCell(0);
-            const cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.className = 'row-selector';
-            cb.dataset.serial = entry.serial;
-            cb.checked = selectedRowsSet.has(entry.serial);
-            cb.onchange = () => {
-                if(cb.checked) selectedRowsSet.add(entry.serial);
-                else selectedRowsSet.delete(entry.serial);
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = "";
+            if(filtered.length === 0) {
+                const row = tbody.insertRow();
+                const cell = row.insertCell(0);
+                cell.colSpan = 11;
+                cell.innerHTML = '📭 No records found';
+                cell.style.textAlign = 'center';
+                cell.style.padding = '40px';
+                updateDashboard();
                 updateSelectedStats();
-            };
-            chkCell.appendChild(cb);
-            row.insertCell(1).innerText = entry.day;
-            row.insertCell(2).innerText = entry.name;
-            row.insertCell(3).innerText = entry.phone || 'N/A';
-            row.insertCell(4).innerText = formatAmount(entry.fees);
-            row.insertCell(5).innerText = formatAmount(entry.received);
-            row.insertCell(6).innerHTML = '<span style="color:' + (entry.pending > 0 ? '#ffaa77' : '#8effa0') + '">' + formatAmount(entry.pending) + '</span>';
-            row.insertCell(7).innerHTML = entry.token || 'No Receipt';
-            row.insertCell(8).innerHTML = entry.receivedBy || '—';
-            row.insertCell(9).innerHTML = entry.isNextMonthPending ? '<span class="badge-next">Next Month</span>' : 'Current';
-            const actionCell = row.insertCell(10);
-            const editBtn = document.createElement('button');
-            editBtn.innerText = 'Edit';
-            editBtn.className = 'edit-btn';
-            editBtn.style.padding = '5px 12px';
-            editBtn.onclick = () => {
-                const idx = data.findIndex(d => d.serial === entry.serial);
-                if(idx !== -1) {
-                    const e = data[idx];
-                    document.getElementById('name').value = e.name;
-                    document.getElementById('phone').value = e.phone || '';
-                    document.getElementById('fees').value = e.fees;
-                    document.getElementById('received').value = e.received === 0 ? '' : e.received;
-                    document.getElementById('day').value = e.day;
-                    editingIndex = idx;
-                    document.getElementById('addBtn').style.display = 'none';
-                    document.getElementById('editActionGroup').style.display = 'flex';
-                    document.getElementById('editingBadge').style.display = 'inline-block';
-                    document.getElementById('customerDetails').innerHTML = `<strong>${e.name}</strong><br/>Phone: ${e.phone || 'N/A'}<br/>Fees: ${formatAmount(e.fees)}<br/>Received: ${formatAmount(e.received)}<br/>Pending: ${formatAmount(e.pending)}<br/>Due Day: ${e.day}`;
-                    setTimeout(() => document.getElementById('received').focus(), 100);
-                }
-            };
-            actionCell.appendChild(editBtn);
-        });
-        updateSelectedStats();
-        updateDashboard();
-    }
-    
-    function updateDashboard() {
-        document.getElementById('totalCustomersCount').innerText = data.length;
-        document.getElementById('pendingCustomersCount').innerText = data.filter(c => c.pending > 0 && !c.isNextMonthPending).length;
-        document.getElementById('receivedCustomersCount').innerText = data.filter(c => c.received > 0 && !c.isNextMonthPending).length;
-        document.getElementById('nextMonthCustomersCount').innerText = data.filter(c => c.isNextMonthPending).length;
-    }
-    
-    function updateSelectedStats() {
-        document.getElementById('selectionCountText').innerText = selectedRowsSet.size + ' selected';
-        document.getElementById('tableActionButtons').style.display = selectedRowsSet.size > 0 ? "flex" : "none";
-        document.getElementById('selectAllCheckbox').checked = selectedRowsSet.size === data.length && data.length > 0;
-    }
-    
-    function addNewEntry() {
-        const name = document.getElementById('name').value.trim();
-        if(!name) return showNotification("Name required", true);
-        const fees = parseFloat(document.getElementById('fees').value) || 0;
-        const received = parseFloat(document.getElementById('received').value) || 0;
-        const day = document.getElementById('day').value;
-        if(!day) return showNotification("Due day required", true);
-        const newSerial = data.length > 0 ? Math.max(...data.map(d => d.serial)) + 1 : 1;
-        data.push({
-            serial: newSerial, name, phone: document.getElementById('phone').value,
-            fees, received, pending: fees - received, day,
-            token: "", isNextMonthPending: false, receivedBy: currentUser?.username || "unknown",
-            lastUpdated: new Date().toLocaleString()
-        });
-        saveToLocal();
-        refreshTable();
-        showNotification("Customer added and synced to cloud");
-        document.getElementById('dataForm').reset();
-        document.getElementById('received').value = '';
-    }
-    
-    function updateEntry() {
-        if(editingIndex === -1) return;
-        const name = document.getElementById('name').value.trim();
-        const fees = parseFloat(document.getElementById('fees').value) || 0;
-        const received = parseFloat(document.getElementById('received').value) || 0;
-        const day = document.getElementById('day').value;
-        if(!name || !day) return;
-        data[editingIndex] = { ...data[editingIndex], name, phone: document.getElementById('phone').value, fees, received, pending: fees - received, day, lastUpdated: new Date().toLocaleString(), receivedBy: currentUser?.username };
-        saveToLocal();
-        cancelEdit();
-        refreshTable();
-        showNotification("Updated and synced");
-    }
-    
-    function cancelEdit() {
-        editingIndex = -1;
-        document.getElementById('addBtn').style.display = 'block';
-        document.getElementById('editActionGroup').style.display = 'none';
-        document.getElementById('editingBadge').style.display = 'none';
-        document.getElementById('dataForm').reset();
-        document.getElementById('received').value = '';
-        document.getElementById('customerDetails').innerHTML = 'Click Edit on any customer';
-        refreshTable();
-    }
-    
-    // ✅ DELETE - Working 100% ✅
-    function deleteSelected() {
-        if(selectedRowsSet.size === 0) return;
-        if(confirm(`Delete ${selectedRowsSet.size} customer(s)? This will also remove from Google Sheets.`)) {
-            data = data.filter(d => !selectedRowsSet.has(d.serial));
-            const deletedCount = selectedRowsSet.size;
-            selectedRowsSet.clear();
-            saveToLocal(); // This triggers cloud sync with updated data
-            refreshTable();
-            showNotification(`Deleted ${deletedCount} customer(s) from local & cloud!`);
-        }
-    }
-    
-    function markNextMonth() {
-        if(selectedRowsSet.size === 0) return;
-        Array.from(selectedRowsSet).forEach(s => {
-            const idx = data.findIndex(d => d.serial === s);
-            if(idx !== -1) data[idx].isNextMonthPending = true;
-        });
-        selectedRowsSet.clear();
-        saveToLocal();
-        refreshTable();
-        showNotification("Marked Next Month");
-    }
-    
-    function unmarkNextMonth() {
-        if(selectedRowsSet.size === 0) return;
-        Array.from(selectedRowsSet).forEach(s => {
-            const idx = data.findIndex(d => d.serial === s);
-            if(idx !== -1) data[idx].isNextMonthPending = false;
-        });
-        selectedRowsSet.clear();
-        saveToLocal();
-        refreshTable();
-        showNotification("Unmarked");
-    }
-    
-    function resetPayment() {
-        if(selectedRowsSet.size === 0) return;
-        if(confirm("Reset payment for selected customers?")) {
-            selectedRowsSet.forEach(s => {
-                const idx = data.findIndex(d => d.serial === s);
-                if(idx !== -1) {
-                    data[idx].received = 0;
-                    data[idx].pending = data[idx].fees;
-                    data[idx].token = "";
-                    data[idx].receivedBy = "";
-                }
+                return;
+            }
+            
+            filtered.forEach(entry => {
+                const row = tbody.insertRow();
+                const chkCell = row.insertCell(0);
+                const cb = document.createElement('input'); 
+                cb.type='checkbox'; 
+                cb.className='row-selector'; 
+                cb.dataset.serial=entry.serial;
+                cb.checked = selectedRowsSet.has(entry.serial);
+                cb.addEventListener('change', () => { 
+                    if(cb.checked) selectedRowsSet.add(entry.serial); 
+                    else selectedRowsSet.delete(entry.serial); 
+                    updateSelectedStats(); 
+                });
+                chkCell.appendChild(cb);
+                row.insertCell(1).innerText = entry.day;
+                row.insertCell(2).innerText = entry.name;
+                row.insertCell(3).innerText = entry.phone || 'N/A';
+                row.insertCell(4).innerText = formatAmount(entry.fees);
+                row.insertCell(5).innerText = formatAmount(entry.received);
+                row.insertCell(6).innerHTML = `<span style="color:${entry.pending > 0 ? '#ffaa77' : '#8effa0'}">${formatAmount(entry.pending)}</span>`;
+                row.insertCell(7).innerHTML = entry.token || '<span style="opacity:0.6;">—</span>';
+                const agentInfo = entry.receivedBy ? `${entry.receivedBy}<br/><small>${entry.lastUpdated?.split(',')[0] || ''}</small>` : '—';
+                row.insertCell(8).innerHTML = `<small>${agentInfo}</small>`;
+                row.insertCell(9).innerHTML = entry.isNextMonthPending ? '<span class="badge-next">Next Month</span>' : '<span>Current</span>';
+                const actionCell = row.insertCell(10);
+                const editBtn = document.createElement('button'); 
+                editBtn.innerText='Edit'; 
+                editBtn.className='edit-btn'; 
+                editBtn.style.padding='5px 12px';
+                editBtn.onclick = () => {
+                    const idx = data.findIndex(d => d.serial === entry.serial);
+                    if(idx !== -1) {
+                        const eData = data[idx];
+                        document.getElementById('name').value = eData.name;
+                        document.getElementById('phone').value = eData.phone || '';
+                        document.getElementById('fees').value = eData.fees;
+                        document.getElementById('received').value = eData.received === 0 ? '' : eData.received;
+                        document.getElementById('day').value = eData.day;
+                        editingIndex = idx;
+                        document.getElementById('addBtn').style.display = 'none';
+                        document.getElementById('editActionGroup').style.display = 'flex';
+                        document.getElementById('editingBadge').style.display = 'inline-block';
+                        document.getElementById('customerDetails').innerHTML = `<div><strong>${eData.name}</strong><br/>📞 ${eData.phone || 'N/A'}<br/>💰 Fees: ${formatAmount(eData.fees)}<br/>💵 Received: ${formatAmount(eData.received)}<br/>📌 Pending: ${formatAmount(eData.pending)}<br/>📅 Due Day: ${eData.day}</div>`;
+                        document.getElementById('received').focus();
+                    }
+                };
+                actionCell.appendChild(editBtn);
             });
-            saveToLocal();
-            refreshTable();
-            selectedRowsSet.clear();
-            showNotification("Payment reset");
+            updateDashboard();
+            updateSelectedStats();
         }
-    }
-    
-    function allReset() {
-        if(confirm("ALL RESET: Next Month customers will have double pending?")) {
-            data.forEach(c => {
-                if(c.isNextMonthPending) c.pending = c.fees * 2;
-                else c.pending = c.fees;
-                c.received = 0;
-                c.token = "";
-                c.receivedBy = "";
-                c.isNextMonthPending = false;
+
+        function updateDashboard() {
+            const all = data;
+            document.getElementById('totalCustomersCount').innerText = all.length;
+            document.getElementById('pendingCustomersCount').innerText = all.filter(c => c.pending > 0 && !c.isNextMonthPending).length;
+            document.getElementById('receivedCustomersCount').innerText = all.filter(c => c.received > 0 && !c.isNextMonthPending).length;
+            document.getElementById('nextMonthCustomersCount').innerText = all.filter(c => c.isNextMonthPending).length;
+            document.getElementById('totalFeesAmount').innerText = formatAmount(all.reduce((s,c)=>s+(c.fees||0),0));
+            const totalPendingAll = all.filter(c => !c.isNextMonthPending).reduce((s,c)=>s+(c.pending||0),0);
+            document.getElementById('pendingFeesAmount').innerText = formatAmount(totalPendingAll);
+            document.getElementById('receivedFeesAmount').innerText = formatAmount(all.filter(c=>!c.isNextMonthPending).reduce((s,c)=>s+(c.received||0),0));
+            document.getElementById('nextMonthFeesAmount').innerText = formatAmount(all.filter(c=>c.isNextMonthPending).reduce((s,c)=>s+(c.fees||0),0));
+        }
+
+        function updateSelectedStats() {
+            const countElem = document.getElementById('selectionCountText');
+            if(countElem) countElem.innerText = selectedRowsSet.size + ' selected';
+            const actionDiv = document.getElementById('tableActionButtons');
+            if(actionDiv) actionDiv.style.display = selectedRowsSet.size > 0 ? "flex" : "none";
+            const selectAll = document.getElementById('selectAllCheckbox');
+            if(selectAll) selectAll.checked = (selectedRowsSet.size === data.length && data.length>0);
+        }
+
+        function addNewEntry() {
+            const name = document.getElementById('name').value.trim();
+            if(!name) return showNotification("Name required", true);
+            const phone = document.getElementById('phone').value;
+            const fees = parseFloat(document.getElementById('fees').value) || 0;
+            let receivedVal = document.getElementById('received').value;
+            const received = receivedVal === '' ? 0 : parseFloat(receivedVal) || 0;
+            const day = document.getElementById('day').value;
+            if(!day) return showNotification("Select due day", true);
+            const pending = fees - received;
+            const newSerial = data.length ? Math.max(...data.map(d=>d.serial)) + 1 : 1;
+            data.push({ 
+                serial: newSerial, name, phone, fees, received, pending, day, 
+                token: received>0 ? generateReceiptNumber() : "", 
+                isNextMonthPending: false, 
+                receivedBy: currentUser?.username || "system", 
+                lastUpdated: new Date().toLocaleString() 
             });
-            saveToLocal();
+            saveToLocalStorage();
             refreshTable();
-            showNotification("Reset completed");
+            document.getElementById('dataForm').reset();
+            document.getElementById('received').value = '';
+            showNotification("Customer added & synced to cloud");
         }
-    }
-    
-    function generateReceipt() {
-        if(editingIndex === -1) return showNotification("Edit a customer first", true);
-        const cust = data[editingIndex];
-        if(!cust.token) cust.token = generateReceiptNumber();
-        saveToLocal();
-        refreshTable();
-        return cust;
-    }
-    
-    function sendSMS() { const c = generateReceipt(); if(c && c.phone) { window.location.href = `sms:${c.phone}?body=Receipt: ${c.token}\nPaid: ${formatAmount(c.received)}\nPending: ${formatAmount(c.pending)}`; showNotification("SMS opened"); } else showNotification("No phone", true); }
-    function sendWhatsApp() { const c = generateReceipt(); if(c && c.phone) { window.open(`https://wa.me/${c.phone.replace(/[^0-9]/g, '')}?text=Receipt: ${c.token}\nPaid: ${formatAmount(c.received)}\nPending: ${formatAmount(c.pending)}`, '_blank'); showNotification("WhatsApp opened"); } else showNotification("No phone", true); }
-    function backupJSON() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ customers: data, users })], { type: "application/json" })); a.download = `backup_${Date.now()}.json`; a.click(); }
-    function restoreData(file) { const reader = new FileReader(); reader.onload = e => { try { const j = JSON.parse(e.target.result); if(j.customers) data = j.customers; if(j.users) users = j.users; saveToLocal(); saveUsersToLocal(); refreshTable(); showNotification("Restored"); } catch(err) { showNotification("Invalid file", true); } }; reader.readAsText(file); }
-    
-    function openUserManagement() {
-        if(!currentUser?.isAdmin) return;
-        const container = document.getElementById('userListContainer');
-        container.innerHTML = '';
-        users.forEach((u, idx) => {
-            const div = document.createElement('div');
-            div.style.cssText = "display:flex; justify-content:space-between; margin:5px 0; padding:5px; background:rgba(255,255,255,0.1); border-radius:5px;";
-            if(u.username !== 'admin') div.innerHTML = `<span>${u.username}</span><button class="del-user" data-idx="${idx}" style="background:#c62828;">Delete</button>`;
-            else div.innerHTML = `<span>${u.username} (Admin)</span>`;
-            container.appendChild(div);
+
+        function updateEntryFromEdit() {
+            if(editingIndex === -1) return;
+            const name = document.getElementById('name').value.trim();
+            const phone = document.getElementById('phone').value;
+            const fees = parseFloat(document.getElementById('fees').value) || 0;
+            let receivedVal = document.getElementById('received').value;
+            const received = receivedVal === '' ? 0 : parseFloat(receivedVal) || 0;
+            const day = document.getElementById('day').value;
+            if(!name || !day) return;
+            const pending = fees - received;
+            data[editingIndex] = { 
+                ...data[editingIndex], 
+                name, phone, fees, received, pending, day, 
+                lastUpdated: new Date().toLocaleString(), 
+                receivedBy: currentUser?.username,
+                token: (received>0 && !data[editingIndex].token) ? generateReceiptNumber() : data[editingIndex].token
+            };
+            saveToLocalStorage();
+            cancelEditMode();
+            refreshTable();
+            showNotification("Updated & synced");
+        }
+        
+        function cancelEditMode() { 
+            editingIndex = -1; 
+            document.getElementById('addBtn').style.display = 'block'; 
+            document.getElementById('editActionGroup').style.display = 'none'; 
+            document.getElementById('editingBadge').style.display = 'none'; 
+            document.getElementById('dataForm').reset(); 
+            document.getElementById('received').value = ''; 
+            document.getElementById('customerDetails').innerHTML = '<p>Click Edit on any customer</p>'; 
+            refreshTable(); 
+        }
+        
+        function deleteSelectedRows() { 
+            if(selectedRowsSet.size === 0) return; 
+            if(confirm(`Delete ${selectedRowsSet.size} customers?`)) { 
+                data = data.filter(d => !selectedRowsSet.has(d.serial)); 
+                selectedRowsSet.clear(); 
+                saveToLocalStorage(); 
+                refreshTable(); 
+                showNotification("Deleted & cloud updated"); 
+            } 
+        }
+        
+        function markSelectedAsNextMonth() { 
+            selectedRowsSet.forEach(s => { 
+                const idx = data.findIndex(d=>d.serial===s); 
+                if(idx !== -1) data[idx].isNextMonthPending = true; 
+            }); 
+            selectedRowsSet.clear(); 
+            saveToLocalStorage(); 
+            refreshTable(); 
+            showNotification("Marked Next Month"); 
+        }
+        
+        function unmarkSelectedFromNextMonth() { 
+            selectedRowsSet.forEach(s => { 
+                const idx = data.findIndex(d=>d.serial===s); 
+                if(idx !== -1) data[idx].isNextMonthPending = false; 
+            }); 
+            selectedRowsSet.clear(); 
+            saveToLocalStorage(); 
+            refreshTable(); 
+            showNotification("Unmarked"); 
+        }
+        
+        function resetCustomerSelected() { 
+            if(confirm("Reset payment for selected customers?\n(This will set Received = 0 and Pending = Full Fees)")) { 
+                selectedRowsSet.forEach(s => { 
+                    const idx = data.findIndex(d=>d.serial===s); 
+                    if(idx !== -1) { 
+                        data[idx].received = 0; 
+                        data[idx].pending = data[idx].fees; 
+                        data[idx].token = ""; 
+                        data[idx].receivedBy = ""; 
+                        data[idx].lastUpdated = ""; 
+                    } 
+                }); 
+                saveToLocalStorage(); 
+                refreshTable(); 
+                selectedRowsSet.clear(); 
+                showNotification("Reset completed: Pending = Full Fees"); 
+            } 
+        }
+
+        function generateReceiptForEdit() { 
+            if(editingIndex === -1) { 
+                showNotification("Edit a customer first", true); 
+                return null; 
+            } 
+            const cust = data[editingIndex]; 
+            if(!cust.token) cust.token = generateReceiptNumber(); 
+            saveToLocalStorage(); 
+            refreshTable(); 
+            return cust; 
+        }
+        
+        function handleSMS() { 
+            const cust = generateReceiptForEdit(); 
+            if(cust?.phone) { 
+                const msg = `US FIBER NET\nReceipt: ${cust.token}\nPaid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`; 
+                window.location.href = `sms:${cust.phone}?body=${encodeURIComponent(msg)}`; 
+                showNotification("SMS opened"); 
+            } else showNotification("Phone missing or edit a customer", true); 
+        }
+        
+        function handleWhatsApp() { 
+            const cust = generateReceiptForEdit(); 
+            if(cust?.phone) { 
+                const msg = `⚡ US FIBER NET ⚡\nReceipt No: ${cust.token}\nAmount Paid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`; 
+                const phone = cust.phone.replace(/[^0-9+]/g, '').replace('+', ''); 
+                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank'); 
+                showNotification("WhatsApp opened"); 
+            } else showNotification("Phone missing or edit a customer", true); 
+        }
+        
+        function backupJSON() { 
+            const backup = { data, users, backupDate: new Date().toISOString() }; 
+            const a = document.createElement('a'); 
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" })); 
+            a.download = `USFiber_Backup_${new Date().toISOString().slice(0,19)}.json`; 
+            a.click(); 
+            showNotification("Backup saved"); 
+        }
+        
+        function restoreData(file) { 
+            const reader = new FileReader(); 
+            reader.onload = e => { 
+                try { 
+                    const j = JSON.parse(e.target.result); 
+                    if(j.data) { 
+                        data = j.data; 
+                        data.forEach(c => { 
+                            if(c.isNextMonthPending === undefined) c.isNextMonthPending = false; 
+                            if(!c.token) c.token = ""; 
+                            if(!c.receivedBy) c.receivedBy = ""; 
+                            if(c.pending === undefined) c.pending = (c.fees||0) - (c.received||0); 
+                        }); 
+                        saveToLocalStorage(); 
+                        refreshTable(); 
+                        showNotification("Restored & cloud synced"); 
+                    } 
+                } catch(err) { showNotification("Invalid file", true); } 
+            }; 
+            reader.readAsText(file); 
+        }
+        
+        function professionalReport() { 
+            let htmlContent = `<!DOCTYPE html>
+            <html>
+            <head><meta charset="UTF-8"><title>US Fiber Net - Monthly Report</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; background: #f5f5f5; }
+                .report-container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+                h1 { color: #0a2f44; border-left: 5px solid #0099cc; padding-left: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th { background: #0a2f44; color: white; padding: 12px; text-align: left; }
+                td { padding: 10px; border-bottom: 1px solid #ddd; }
+                .total-row { background: #e0f2fe; font-weight: bold; }
+            </style>
+            </head>
+            <body>
+                <div class="report-container">
+                    <h1>📊 US Fiber Net - Monthly Financial Report</h1>
+                    <p>Generated: ${new Date().toLocaleString()} | Total Customers: ${data.length}</p>
+                    <table>
+                        <thead><tr><th>Name</th><th>Phone</th><th>Fees</th><th>Received</th><th>Pending</th><th>Due Day</th><th>Status</th></tr></thead>
+                        <tbody>${data.map(c => `<tr>
+                            <td>${c.name}</td>
+                            <td>${c.phone || '-'}</td>
+                            <td>$${formatAmount(c.fees)}</td>
+                            <td>$${formatAmount(c.received)}</td>
+                            <td style="color:${c.pending>0?'#e53935':'#2e7d32'}">$${formatAmount(c.pending)}</td>
+                            <td>${c.day}</td>
+                            <td>${c.isNextMonthPending ? 'Next Month' : 'Current'}</td>
+                            </tr>`).join('')}</tbody>
+                        <tfoot><tr class="total-row"><td colspan="2"><strong>TOTAL</strong></td><td><strong>$${formatAmount(data.reduce((s,c)=>s+(c.fees||0),0))}</strong></td><td><strong>$${formatAmount(data.reduce((s,c)=>s+(c.received||0),0))}</strong></td><td><strong>$${formatAmount(data.reduce((s,c)=>s+(c.pending||0),0))}</strong></td><td colspan="2"></td></tr></tfoot>
+                    </table>
+                </div>
+            </body>
+            </html>`;
+            const win = window.open(); 
+            win.document.write(htmlContent); 
+            win.document.close(); 
+        }
+        
+        function loadFromLocalStorage() { 
+            const saved = localStorage.getItem(STORAGE_KEY); 
+            if(saved) { 
+                data = JSON.parse(saved); 
+                data.forEach(c => { 
+                    if(c.isNextMonthPending===undefined) c.isNextMonthPending=false; 
+                    if(!c.token) c.token=""; 
+                    if(!c.receivedBy) c.receivedBy=""; 
+                    if(c.pending===undefined) c.pending=c.fees-c.received; 
+                }); 
+                refreshTable(); 
+            } else data = []; 
+        }
+
+        // ========== EVENT LISTENERS ==========
+        document.getElementById('dataForm').addEventListener('submit', (e) => { e.preventDefault(); editingIndex === -1 ? addNewEntry() : updateEntryFromEdit(); });
+        document.getElementById('updateBtn').onclick = updateEntryFromEdit; 
+        document.getElementById('cancelBtn').onclick = cancelEditMode;
+        document.getElementById('sendSmsBtn').onclick = handleSMS; 
+        document.getElementById('sendWhatsAppBtn').onclick = handleWhatsApp;
+        document.getElementById('tableDeleteBtn').onclick = deleteSelectedRows; 
+        document.getElementById('tableResetCustomerBtn').onclick = resetCustomerSelected;
+        document.getElementById('tableNextMonthBtn').onclick = markSelectedAsNextMonth; 
+        document.getElementById('tableUnmarkNextMonthBtn').onclick = unmarkSelectedFromNextMonth;
+        document.getElementById('selectAllCheckbox').addEventListener('change', (e) => { 
+            document.querySelectorAll('.row-selector').forEach(cb => { 
+                cb.checked = e.target.checked; 
+                const s = parseInt(cb.dataset.serial); 
+                if(e.target.checked) selectedRowsSet.add(s); 
+                else selectedRowsSet.delete(s); 
+            }); 
+            updateSelectedStats(); 
         });
-        document.querySelectorAll('.del-user').forEach(btn => btn.onclick = () => { const idx = parseInt(btn.dataset.idx); if(users[idx].username !== 'admin') { users.splice(idx, 1); saveUsersToLocal(); openUserManagement(); showNotification("User deleted"); } });
-        document.getElementById('userModal').style.display = 'flex';
-    }
-    
-    // Event bindings
-    document.getElementById('dataForm').onsubmit = (e) => { e.preventDefault(); editingIndex === -1 ? addNewEntry() : updateEntry(); };
-    document.getElementById('updateBtn').onclick = updateEntry;
-    document.getElementById('cancelBtn').onclick = cancelEdit;
-    document.getElementById('sendSmsBtn').onclick = sendSMS;
-    document.getElementById('sendWhatsAppBtn').onclick = sendWhatsApp;
-    document.getElementById('tableDeleteBtn').onclick = deleteSelected;
-    document.getElementById('tableResetCustomerBtn').onclick = resetPayment;
-    document.getElementById('tableNextMonthBtn').onclick = markNextMonth;
-    document.getElementById('tableUnmarkNextMonthBtn').onclick = unmarkNextMonth;
-    document.getElementById('selectAllCheckbox').onchange = (e) => { document.querySelectorAll('.row-selector').forEach(cb => { cb.checked = e.target.checked; const s = parseInt(cb.dataset.serial); if(e.target.checked) selectedRowsSet.add(s); else selectedRowsSet.delete(s); }); updateSelectedStats(); };
-    document.getElementById('backupJsonBtn').onclick = backupJSON;
-    document.getElementById('restoreBtn').onclick = () => document.getElementById('restoreFile').click();
-    document.getElementById('restoreFile').onchange = e => e.target.files.length && restoreData(e.target.files[0]);
-    document.getElementById('reportBtn').onclick = () => { let csv = "Name,Phone,Fees,Received,Pending,Day,Status\n" + data.map(c => `${c.name},${c.phone},${c.fees},${c.received},${c.pending},${c.day},${c.isNextMonthPending ? "Next" : "Current"}`).join("\n"); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv])); a.download = "report.csv"; a.click(); };
-    document.getElementById('allResetBtn').onclick = allReset;
-    document.getElementById('doSearchBtn').onclick = () => { activeSearch.field = document.getElementById('searchField').value; activeSearch.value = document.getElementById('searchValue').value; refreshTable(); };
-    document.getElementById('clearSearchBtn').onclick = () => { activeSearch = { field: "", value: "" }; document.getElementById('searchValue').value = ""; refreshTable(); };
-    document.getElementById('searchValue').addEventListener('keypress', e => { if(e.key === 'Enter') document.getElementById('doSearchBtn').click(); });
-    document.getElementById('doFilterBtn').onclick = () => { const v = document.getElementById('filterValueInput')?.value || document.getElementById('filterValueSelect')?.value; if(!v) return showNotification("Enter value", true); activeFilter = { type: document.getElementById('filterTypeSelect').value, value: v }; refreshTable(); };
-    document.getElementById('clearFilterBtn').onclick = () => { activeFilter = { type: "", value: "" }; refreshTable(); };
-    document.getElementById('filterTypeSelect').onchange = () => { const type = document.getElementById('filterTypeSelect').value; const container = document.getElementById('filterValueContainer'); if(type === 'agent') { const agents = [...new Set(data.map(c => c.receivedBy).filter(a => a))]; container.innerHTML = `<select id="filterValueSelect"><option value="">All</option>${agents.map(a => `<option value="${a}">${a}</option>`).join('')}</select>`; } else if(type === 'day') { container.innerHTML = `<select id="filterValueSelect"><option value="">All</option>${[1,5,10,15,20,25,30,31].map(d => `<option value="${d}">${d}</option>`).join('')}</select>`; } else { container.innerHTML = `<input type="text" id="filterValueInput" placeholder=">0, =0">`; setTimeout(() => document.getElementById('filterValueInput')?.addEventListener('keypress', e => { if(e.key === 'Enter') document.getElementById('doFilterBtn').click(); }), 50); } activeFilter = { type: "", value: "" }; refreshTable(); };
-    document.getElementById('setupSheetBtn').onclick = () => { document.getElementById('sheetWebAppUrl').value = localStorage.getItem("sheetUrl") || DEFAULT_GOOGLE_SHEET_URL; document.getElementById('sheetModal').style.display = 'flex'; document.getElementById('dropdownMenu').classList.remove('show'); };
-    document.getElementById('saveSheetSettings').onclick = async () => { const url = document.getElementById('sheetWebAppUrl').value; if(url) localStorage.setItem("sheetUrl", url); showNotification("Saved! Loading..."); await loadFromCloud(); document.getElementById('sheetModal').style.display = 'none'; };
-    document.getElementById('closeSheetModal').onclick = () => document.getElementById('sheetModal').style.display = 'none';
-    document.getElementById('manualSyncBtn').onclick = async () => { await loadFromCloud(); };
-    document.getElementById('userManagementBtn').onclick = openUserManagement;
-    document.getElementById('createUserBtn').onclick = () => { const un = document.getElementById('newUsername').value.trim(); const pw = document.getElementById('newUserPassword').value; if(!un || pw.length < 4) return showNotification("Invalid", true); if(users.find(u => u.username === un)) return showNotification("Exists", true); users.push({ username: un, password: pw, isAdmin: false }); saveUsersToLocal(); openUserManagement(); showNotification("User created"); };
-    document.getElementById('closeUserModalBtn').onclick = () => document.getElementById('userModal').style.display = 'none';
-    document.getElementById('changePasswordBtn').onclick = () => document.getElementById('passwordModal').style.display = 'flex';
-    document.getElementById('savePasswordBtn').onclick = () => { const curr = document.getElementById('currentPassword').value; const newp = document.getElementById('newPassword').value; const conf = document.getElementById('confirmPassword').value; if(curr !== currentUser.password) return showNotification("Wrong password", true); if(newp !== conf) return showNotification("Mismatch", true); currentUser.password = newp; const idx = users.findIndex(u => u.username === currentUser.username); if(idx !== -1) users[idx].password = newp; saveUsersToLocal(); document.getElementById('passwordModal').style.display = 'none'; showNotification("Password changed"); };
-    document.getElementById('cancelPasswordBtn').onclick = () => document.getElementById('passwordModal').style.display = 'none';
-    document.getElementById('logoutBtn').onclick = () => { sessionStorage.clear(); currentUser = null; document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('mainContainer').style.display = 'none'; };
-    document.getElementById('searchPanelBtn').onclick = () => { document.getElementById('searchPanel').classList.toggle('active'); document.getElementById('filterPanel').classList.remove('active'); document.getElementById('dropdownMenu').classList.remove('show'); if(!document.getElementById('searchPanel').classList.contains('active')) { activeSearch = { field: "", value: "" }; document.getElementById('searchValue').value = ""; refreshTable(); } };
-    document.getElementById('filterPanelBtn').onclick = () => { document.getElementById('filterPanel').classList.toggle('active'); document.getElementById('searchPanel').classList.remove('active'); document.getElementById('dropdownMenu').classList.remove('show'); if(!document.getElementById('filterPanel').classList.contains('active')) { activeFilter = { type: "", value: "" }; refreshTable(); } };
-    document.getElementById('menuBtn').onclick = (e) => { e.stopPropagation(); document.getElementById('dropdownMenu').classList.toggle('show'); };
-    document.addEventListener('click', (e) => { const menu = document.getElementById('dropdownMenu'); if(menu && !document.getElementById('menuBtn').contains(e.target) && !menu.contains(e.target)) menu.classList.remove('show'); });
-    
-    function handleLogin() { const un = document.getElementById('loginUsername').value.trim(); const pw = document.getElementById('loginPassword').value; const user = users.find(u => u.username === un && u.password === pw); if(user) { currentUser = { ...user }; sessionStorage.setItem('loggedIn', 'true'); sessionStorage.setItem('currentUser', JSON.stringify(currentUser)); document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainContainer').style.display = 'block'; document.getElementById('userInfoDisplay').innerHTML = un + (user.isAdmin ? ' 👑' : ''); document.querySelectorAll('.admin-only').forEach(btn => btn.style.display = user.isAdmin ? 'block' : 'none'); refreshTable(); showNotification("Welcome " + un); } else { document.getElementById('loginMessage').style.display = 'block'; } }
-    document.getElementById('loginBtn').onclick = handleLogin;
-    document.getElementById('loginPassword').addEventListener('keypress', e => { if(e.key === 'Enter') handleLogin(); });
-    
-    async function init() { const saved = localStorage.getItem(USERS_KEY); users = saved ? JSON.parse(saved) : [{ username: "admin", password: "admin123", isAdmin: true }]; await loadFromCloud(); const logged = sessionStorage.getItem('loggedIn') === 'true'; const savedUser = sessionStorage.getItem('currentUser'); if(logged && savedUser) { currentUser = JSON.parse(savedUser); document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainContainer').style.display = 'block'; document.getElementById('userInfoDisplay').innerHTML = currentUser.username + (currentUser.isAdmin ? ' 👑' : ''); document.querySelectorAll('.admin-only').forEach(btn => btn.style.display = currentUser.isAdmin ? 'block' : 'none'); refreshTable(); } else { document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('mainContainer').style.display = 'none'; } }
-    init();
-</script>
+        document.getElementById('backupJsonBtn').onclick = backupJSON; 
+        document.getElementById('restoreBtn').onclick = () => document.getElementById('restoreFile').click();
+        document.getElementById('restoreFile').onchange = e => { if(e.target.files.length) restoreData(e.target.files[0]); };
+        document.getElementById('reportBtn').onclick = professionalReport; 
+        document.getElementById('allResetBtn').onclick = allResetSpecial;
+        document.getElementById('saveCloudBtn').onclick = manualSaveToCloud; 
+        document.getElementById('loadCloudBtn').onclick = manualLoadFromCloud;
+        document.getElementById('cloudSetupBtn').onclick = () => { 
+            document.getElementById('sheetWebAppUrl').value = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL; 
+            document.getElementById('sheetModal').style.display='flex'; 
+            document.getElementById('dropdownMenu').classList.remove('show');
+        };
+        document.getElementById('saveSheetSettings').onclick = () => { 
+            const url = document.getElementById('sheetWebAppUrl').value; 
+            if(url) localStorage.setItem("googleSheetUrl", url); 
+            showNotification("Cloud URL saved"); 
+            document.getElementById('sheetModal').style.display='none'; 
+        };
+        document.getElementById('closeSheetModal').onclick = () => document.getElementById('sheetModal').style.display='none';
+        
+        document.getElementById('doSearchBtn').onclick = () => { 
+            activeSearch.field = document.getElementById('searchField').value; 
+            activeSearch.value = document.getElementById('searchValue').value; 
+            refreshTable(); 
+        };
+        document.getElementById('clearSearchBtn').onclick = () => { 
+            activeSearch = { field: "", value: "" }; 
+            document.getElementById('searchValue').value = ""; 
+            refreshTable(); 
+            showNotification("Search cleared");
+        };
+        document.getElementById('searchValue').addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doSearchBtn').click(); });
+        
+        document.getElementById('doFilterBtn').onclick = () => { 
+            let filterVal = document.getElementById('filterValueInput').value;
+            if(document.getElementById('filterValueInput').tagName === 'SELECT') {
+                filterVal = document.getElementById('filterValueInput').value;
+            }
+            activeFilter.type = document.getElementById('filterTypeSelect').value; 
+            activeFilter.value = filterVal; 
+            refreshTable(); 
+        };
+        document.getElementById('clearFilterBtn').onclick = () => { 
+            activeFilter = { type: "", value: "" }; 
+            document.getElementById('filterValueInput').value = ""; 
+            refreshTable(); 
+            showNotification("Filter cleared");
+        };
+        
+        function updateFilterUI() {
+            const filterType = document.getElementById('filterTypeSelect').value;
+            const container = document.getElementById('filterValueContainer');
+            if(filterType === 'agent') {
+                // Show admin, umair, saqib + any other agents from data
+                const defaultAgents = ['admin', 'umair', 'saqib'];
+                const agentsFromData = [...new Set(data.map(c => c.receivedBy).filter(a => a && a.trim()))];
+                const allAgents = [...new Set([...defaultAgents, ...agentsFromData])];
+                container.innerHTML = `<label>Select Agent</label><select id="filterValueInput">
+                    <option value="">All Agents</option>
+                    ${allAgents.map(a => `<option value="${a}">${a}</option>`).join('')}
+                </select>`;
+            } else if(filterType === 'day') {
+                container.innerHTML = `<label>Select Due Day</label><select id="filterValueInput">
+                    <option value="">All Days</option>
+                    ${[1,5,10,15,20,25,30,31].map(d => `<option value="${d}">${d}</option>`).join('')}
+                </select>`;
+            } else {
+                container.innerHTML = `<label>Value (e.g., >0, =0, or exact amount)</label>
+                    <input type="text" id="filterValueInput" placeholder=">0, =0, or number" autocomplete="off">`;
+            }
+            const newInput = document.getElementById('filterValueInput');
+            if(newInput && newInput.tagName === 'INPUT') {
+                newInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doFilterBtn').click(); });
+            }
+        }
+        
+        document.getElementById('filterTypeSelect').addEventListener('change', () => updateFilterUI());
+        
+        document.getElementById('changePasswordBtn').onclick = () => document.getElementById('passwordModal').style.display='flex';
+        document.getElementById('savePasswordBtn').onclick = () => { 
+            const curr = document.getElementById('currentPassword').value; 
+            const newp = document.getElementById('newPassword').value; 
+            const conf = document.getElementById('confirmPassword').value; 
+            if(curr !== currentUser.password) { showNotification("Wrong current password", true); return; } 
+            if(newp !== conf) { showNotification("Passwords do not match", true); return; } 
+            if(newp.length < 4) { showNotification("Password must be at least 4 characters", true); return; }
+            currentUser.password = newp; 
+            const idx = users.findIndex(u=>u.username===currentUser.username); 
+            if(idx!==-1) users[idx].password = newp; 
+            saveUsers(); 
+            document.getElementById('passwordModal').style.display='none'; 
+            showNotification("Password changed successfully"); 
+        };
+        document.getElementById('cancelPasswordBtn').onclick = () => document.getElementById('passwordModal').style.display='none';
+        
+        document.getElementById('logoutBtn').onclick = () => { 
+            sessionStorage.clear(); 
+            currentUser = null; 
+            document.getElementById('loginScreen').style.display='flex'; 
+            document.getElementById('mainContainer').style.display='none'; 
+            cancelEditMode(); 
+        };
+        
+        document.getElementById('searchPanelBtn').onclick = () => { 
+            document.getElementById('searchPanel').classList.toggle('active'); 
+            document.getElementById('filterPanel').classList.remove('active'); 
+            document.getElementById('dropdownMenu').classList.remove('show');
+        };
+        document.getElementById('filterPanelBtn').onclick = () => { 
+            document.getElementById('filterPanel').classList.toggle('active'); 
+            document.getElementById('searchPanel').classList.remove('active'); 
+            document.getElementById('dropdownMenu').classList.remove('show');
+            setTimeout(() => updateFilterUI(), 50);
+        };
+        
+        const menuBtn = document.getElementById('menuBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        menuBtn.onclick = (e) => { 
+            e.stopPropagation(); 
+            e.preventDefault();
+            dropdownMenu.classList.toggle('show');
+        };
+        document.addEventListener('click', function(event) {
+            if (!menuBtn.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                dropdownMenu.classList.remove('show');
+            }
+        });
+        
+        function resetDefaultPassword() {
+            const adminUser = users.find(u => u.username === 'admin');
+            if(adminUser) adminUser.password = 'admin123';
+            const umairUser = users.find(u => u.username === 'umair');
+            if(umairUser) umairUser.password = 'admin123';
+            const saqibUser = users.find(u => u.username === 'saqib');
+            if(saqibUser) saqibUser.password = 'admin123';
+            saveUsers();
+            showNotification("All default passwords reset to 'admin123'");
+        }
+        
+        document.getElementById('resetPasswordLoginBtn').onclick = () => {
+            resetDefaultPassword();
+            document.getElementById('loginMessage').style.display = 'none';
+            showNotification("Passwords reset to admin123 for all users");
+        };
+        
+        function handleLogin() { 
+            const username = document.getElementById('loginUsername').value.trim(); 
+            const pwd = document.getElementById('loginPassword').value; 
+            const user = users.find(u => u.username === username && u.password === pwd); 
+            if(user) { 
+                currentUser = { ...user }; 
+                sessionStorage.setItem('loggedUser', JSON.stringify(currentUser)); 
+                document.getElementById('loginScreen').style.display='none'; 
+                document.getElementById('mainContainer').style.display='block'; 
+                document.getElementById('userInfoDisplay').innerHTML = `${username} (${user.role === 'admin' ? 'Admin' : 'Agent'})`; 
+                loadFromLocalStorage(); 
+                setTimeout(() => manualLoadFromCloud(), 500); 
+                showNotification(`Welcome ${username}!`); 
+            } else { 
+                document.getElementById('loginMessage').style.display='block'; 
+                setTimeout(() => document.getElementById('loginMessage').style.display='none', 2000);
+            } 
+        }
+        
+        document.getElementById('loginBtn').onclick = handleLogin; 
+        document.getElementById('loginPassword').addEventListener('keypress', e => { if(e.key === 'Enter') handleLogin(); });
+        
+        loadUsers(); 
+        const logged = sessionStorage.getItem('loggedUser'); 
+        if(logged) { 
+            currentUser = JSON.parse(logged); 
+            document.getElementById('loginScreen').style.display='none'; 
+            document.getElementById('mainContainer').style.display='block'; 
+            document.getElementById('userInfoDisplay').innerHTML = `${currentUser.username} (${currentUser.role === 'admin' ? 'Admin' : 'Agent'})`; 
+            loadFromLocalStorage(); 
+            setTimeout(() => manualLoadFromCloud(), 500);
+        }
+        
+        updateFilterUI();
+    </script>
 </body>
 </html>
