@@ -624,7 +624,6 @@ function doGet() {
 
     <script>
         // ================== CONFIGURATION ==================
-        // NEW DEFAULT URL PROVIDED BY USER
         const DEFAULT_GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbw-h3XPXITCOPDrNuM5-pIfUYOB5OaxnmdCfF04jChY51lUxpwQ8Cb8h6EVcPdCc8Yt/exec";
         let data = [], editingIndex = -1, selectedRowsSet = new Set(), currentUser = null;
         let activeSearch = { field: "", value: "" };
@@ -632,7 +631,6 @@ function doGet() {
         let googleSheetUrl = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
         const STORAGE_KEY = "usFiberNetFinalV3", USERS_KEY = "usFiberNetUsersFinalV3";
 
-        // 3 agents: admin, umair, saqib
         let users = [
             { username: "admin", password: "admin123", role: "admin" },
             { username: "umair", password: "admin123", role: "agent" },
@@ -653,6 +651,20 @@ function doGet() {
 
         function generateReceiptNumber() { return "USF-" + new Date().getFullYear() + String(Math.floor(Math.random() * 9999)).padStart(4,'0'); }
         function formatAmount(amt) { return Number(amt).toFixed(2); }
+        function getCurrentFormattedDate() { 
+            const now = new Date();
+            return now.toLocaleDateString('en-PK', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+
+        // ENHANCED: rich receipt message with customer name, date, receipt#, paid, pending, and thank you
+        function generateRichReceiptMessage(customer) {
+            const receiptNo = customer.token || generateReceiptNumber();
+            if(!customer.token) customer.token = receiptNo;
+            const paidAmount = formatAmount(customer.received);
+            const pendingAmount = formatAmount(customer.pending);
+            const currentDate = getCurrentFormattedDate();
+            return `🏢 *US Fiber Net* 🏢\n━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* ${customer.name}\n📅 *Date:* ${currentDate}\n🧾 *Receipt No:* ${receiptNo}\n💵 *Paid:* PKR ${paidAmount}\n⏳ *Pending:* PKR ${pendingAmount}\n━━━━━━━━━━━━━━━━━━━\n✅ Thank you for choosing US Fiber Net! 🙏`;
+        }
 
         async function autoSyncToGoogleSheet() {
             const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
@@ -698,7 +710,6 @@ function doGet() {
 
         function saveToLocalStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); autoSyncToGoogleSheet(); }
 
-        // ALL RESET: pending becomes full fees
         function allResetSpecial() { 
             if(confirm("⚠️ ALL RESET SPECIAL:\n- All customers: Pending amount = FULL MONTHLY FEES\n- All received amounts become ZERO\n- Receipts cleared\n- Next Month customers become CURRENT\nProceed?")) { 
                 data.forEach(c => { 
@@ -713,14 +724,6 @@ function doGet() {
                 refreshTable(); 
                 showNotification("Special reset completed: All pending = full fees amount"); 
             } 
-        }
-
-        // Get unique agents from data + also include default agents (admin, umair, saqib)
-        function getAllAgentsList() {
-            const agentsFromData = [...new Set(data.map(c => c.receivedBy).filter(a => a && a.trim()))];
-            const defaultAgents = ['admin', 'umair', 'saqib'];
-            const allAgents = [...new Set([...defaultAgents, ...agentsFromData])];
-            return allAgents;
         }
 
         function refreshTable() {
@@ -747,7 +750,6 @@ function doGet() {
                     return true;
                 });
             }
-            
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = "";
             if(filtered.length === 0) {
@@ -761,7 +763,6 @@ function doGet() {
                 updateSelectedStats();
                 return;
             }
-            
             filtered.forEach(entry => {
                 const row = tbody.insertRow();
                 const chkCell = row.insertCell(0);
@@ -947,35 +948,36 @@ function doGet() {
             } 
         }
 
-        function generateReceiptForEdit() { 
+        function generateReceiptForCurrentEdit() { 
             if(editingIndex === -1) { 
-                showNotification("Edit a customer first", true); 
+                showNotification("Please edit a customer first to generate receipt", true); 
                 return null; 
             } 
             const cust = data[editingIndex]; 
-            if(!cust.token) cust.token = generateReceiptNumber(); 
+            if(!cust.token && cust.received > 0) cust.token = generateReceiptNumber();
+            else if(!cust.token) cust.token = generateReceiptNumber();
             saveToLocalStorage(); 
             refreshTable(); 
             return cust; 
         }
         
         function handleSMS() { 
-            const cust = generateReceiptForEdit(); 
-            if(cust?.phone) { 
-                const msg = `US FIBER NET\nReceipt: ${cust.token}\nPaid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`; 
-                window.location.href = `sms:${cust.phone}?body=${encodeURIComponent(msg)}`; 
-                showNotification("SMS opened"); 
-            } else showNotification("Phone missing or edit a customer", true); 
+            const cust = generateReceiptForCurrentEdit(); 
+            if(cust && cust.phone) { 
+                const message = generateRichReceiptMessage(cust);
+                window.location.href = `sms:${cust.phone}?body=${encodeURIComponent(message)}`; 
+                showNotification("SMS receipt prepared with full details"); 
+            } else showNotification("Phone missing or select/edit a customer", true); 
         }
         
         function handleWhatsApp() { 
-            const cust = generateReceiptForEdit(); 
-            if(cust?.phone) { 
-                const msg = `⚡ US FIBER NET ⚡\nReceipt No: ${cust.token}\nAmount Paid: ${formatAmount(cust.received)}\nPending: ${formatAmount(cust.pending)}\nThank you!`; 
-                const phone = cust.phone.replace(/[^0-9+]/g, '').replace('+', ''); 
-                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank'); 
-                showNotification("WhatsApp opened"); 
-            } else showNotification("Phone missing or edit a customer", true); 
+            const cust = generateReceiptForCurrentEdit(); 
+            if(cust && cust.phone) { 
+                const message = generateRichReceiptMessage(cust);
+                const phoneRaw = cust.phone.replace(/[^0-9+]/g, '').replace(/^\+/, ''); 
+                window.open(`https://wa.me/${phoneRaw}?text=${encodeURIComponent(message)}`, '_blank'); 
+                showNotification("WhatsApp receipt opened with full details"); 
+            } else showNotification("Phone missing or select/edit a customer", true); 
         }
         
         function backupJSON() { 
@@ -1116,9 +1118,7 @@ function doGet() {
         
         document.getElementById('doFilterBtn').onclick = () => { 
             let filterVal = document.getElementById('filterValueInput').value;
-            if(document.getElementById('filterValueInput').tagName === 'SELECT') {
-                filterVal = document.getElementById('filterValueInput').value;
-            }
+            if(document.getElementById('filterValueInput').tagName === 'SELECT') filterVal = document.getElementById('filterValueInput').value;
             activeFilter.type = document.getElementById('filterTypeSelect').value; 
             activeFilter.value = filterVal; 
             refreshTable(); 
@@ -1134,29 +1134,18 @@ function doGet() {
             const filterType = document.getElementById('filterTypeSelect').value;
             const container = document.getElementById('filterValueContainer');
             if(filterType === 'agent') {
-                // Show admin, umair, saqib + any other agents from data
                 const defaultAgents = ['admin', 'umair', 'saqib'];
                 const agentsFromData = [...new Set(data.map(c => c.receivedBy).filter(a => a && a.trim()))];
                 const allAgents = [...new Set([...defaultAgents, ...agentsFromData])];
-                container.innerHTML = `<label>Select Agent</label><select id="filterValueInput">
-                    <option value="">All Agents</option>
-                    ${allAgents.map(a => `<option value="${a}">${a}</option>`).join('')}
-                </select>`;
+                container.innerHTML = `<label>Select Agent</label><select id="filterValueInput"><option value="">All Agents</option>${allAgents.map(a => `<option value="${a}">${a}</option>`).join('')}</select>`;
             } else if(filterType === 'day') {
-                container.innerHTML = `<label>Select Due Day</label><select id="filterValueInput">
-                    <option value="">All Days</option>
-                    ${[1,5,10,15,20,25,30,31].map(d => `<option value="${d}">${d}</option>`).join('')}
-                </select>`;
+                container.innerHTML = `<label>Select Due Day</label><select id="filterValueInput"><option value="">All Days</option>${[1,5,10,15,20,25,30,31].map(d => `<option value="${d}">${d}</option>`).join('')}</select>`;
             } else {
-                container.innerHTML = `<label>Value (e.g., >0, =0, or exact amount)</label>
-                    <input type="text" id="filterValueInput" placeholder=">0, =0, or number" autocomplete="off">`;
+                container.innerHTML = `<label>Value (e.g., >0, =0, or exact amount)</label><input type="text" id="filterValueInput" placeholder=">0, =0, or number" autocomplete="off">`;
             }
             const newInput = document.getElementById('filterValueInput');
-            if(newInput && newInput.tagName === 'INPUT') {
-                newInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doFilterBtn').click(); });
-            }
+            if(newInput && newInput.tagName === 'INPUT') newInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doFilterBtn').click(); });
         }
-        
         document.getElementById('filterTypeSelect').addEventListener('change', () => updateFilterUI());
         
         document.getElementById('changePasswordBtn').onclick = () => document.getElementById('passwordModal').style.display='flex';
@@ -1197,16 +1186,13 @@ function doGet() {
         };
         
         const menuBtn = document.getElementById('menuBtn');
-        const dropdownMenu = document.getElementById('dropdownMenu');
+        const dropdownMenuEl = document.getElementById('dropdownMenu');
         menuBtn.onclick = (e) => { 
             e.stopPropagation(); 
-            e.preventDefault();
-            dropdownMenu.classList.toggle('show');
+            dropdownMenuEl.classList.toggle('show');
         };
         document.addEventListener('click', function(event) {
-            if (!menuBtn.contains(event.target) && !dropdownMenu.contains(event.target)) {
-                dropdownMenu.classList.remove('show');
-            }
+            if (!menuBtn.contains(event.target) && !dropdownMenuEl.contains(event.target)) dropdownMenuEl.classList.remove('show');
         });
         
         function resetDefaultPassword() {
@@ -1219,12 +1205,7 @@ function doGet() {
             saveUsers();
             showNotification("All default passwords reset to 'admin123'");
         }
-        
-        document.getElementById('resetPasswordLoginBtn').onclick = () => {
-            resetDefaultPassword();
-            document.getElementById('loginMessage').style.display = 'none';
-            showNotification("Passwords reset to admin123 for all users");
-        };
+        document.getElementById('resetPasswordLoginBtn').onclick = () => { resetDefaultPassword(); document.getElementById('loginMessage').style.display = 'none'; showNotification("Passwords reset to admin123 for all users"); };
         
         function handleLogin() { 
             const username = document.getElementById('loginUsername').value.trim(); 
@@ -1244,7 +1225,6 @@ function doGet() {
                 setTimeout(() => document.getElementById('loginMessage').style.display='none', 2000);
             } 
         }
-        
         document.getElementById('loginBtn').onclick = handleLogin; 
         document.getElementById('loginPassword').addEventListener('keypress', e => { if(e.key === 'Enter') handleLogin(); });
         
@@ -1258,7 +1238,6 @@ function doGet() {
             loadFromLocalStorage(); 
             setTimeout(() => manualLoadFromCloud(), 500);
         }
-        
         updateFilterUI();
     </script>
 </body>
