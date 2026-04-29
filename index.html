@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>US Fiber Net | Premium Billing + Cloud Sync</title>
+    <title>US Fiber Net | Agent Analytics + Advanced Reporting</title>
     <style>
         * {
             margin: 0;
@@ -382,16 +382,6 @@
             color: #8effa0;
         }
 
-        .sync-status.loading {
-            background: #ff980020;
-            color: #ffaa66;
-        }
-
-        .sync-status.error {
-            background: #d32f2f20;
-            color: #ffaa88;
-        }
-
         .select-all-wrapper {
             display: flex;
             align-items: center;
@@ -409,18 +399,19 @@
             cursor: pointer;
         }
 
-        .select-all-wrapper label {
-            margin: 0;
-            cursor: pointer;
-            font-weight: 500;
+        .agent-dashboard-head {
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            background: #1e4a6e;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 40px;
         }
-
-        @media (max-width: 1000px) {
-
-            .left-section,
-            .table-section {
-                min-width: 100%;
-            }
+        
+        .modal-content .button-group-small {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
         }
     </style>
 </head>
@@ -428,14 +419,8 @@
     <div class="login-screen" id="loginScreen">
         <div class="login-form">
             <h2 style="margin-bottom:20px; text-align:center;">US Fiber Net</h2>
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="loginUsername" placeholder="Username">
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="loginPassword" placeholder="Password">
-            </div>
+            <div class="form-group"><label>Username</label><input type="text" id="loginUsername" placeholder="Username"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="loginPassword" placeholder="Password"></div>
             <button id="loginBtn" style="width:100%;">Login</button>
             <button id="resetPasswordLoginBtn" style="width:100%; margin-top:12px; background:#ff9800;">Reset Default Password</button>
             <p id="loginMessage" style="color:#ffaa88; margin-top:12px; text-align:center; display:none;">Invalid credentials</p>
@@ -444,25 +429,17 @@
 
     <div class="container" style="display:none;" id="mainContainer">
         <header>
-            <div class="header-center">
-                <h1>US Fiber Net</h1>
-                <p>Smart Billing • Auto + Manual Cloud Sync</p>
-            </div>
+            <div class="header-center"><h1>US Fiber Net</h1><p>Smart Billing • Auto + Manual Cloud Sync</p></div>
             <div style="display:flex; align-items:center; gap:15px;">
                 <div class="user-info" id="userInfoDisplay"></div>
                 <div class="menu-container">
                     <button class="menu-btn" id="menuBtn">☰ Menu ▼</button>
                     <div class="dropdown-menu" id="dropdownMenu">
-                        <button id="searchPanelBtn">🔍 Search Panel</button>
-                        <button id="filterPanelBtn">⚙️ Filter Panel</button>
-                        <button id="backupJsonBtn">📁 Backup (JSON)</button>
-                        <button id="restoreBtn">📂 Restore Data</button>
-                        <button id="reportBtn">📊 Professional Report</button>
-                        <button id="cloudSetupBtn">☁️ Cloud Setup</button>
-                        <button id="saveCloudBtn">💾 Save to Cloud</button>
-                        <button id="loadCloudBtn">📥 Load from Cloud</button>
-                        <button id="changePasswordBtn">🔒 Change Password</button>
-                        <button id="allResetBtn">🔄 All Reset (Special)</button>
+                        <button id="searchPanelBtn">🔍 Search Panel</button><button id="filterPanelBtn">⚙️ Filter Panel</button>
+                        <button id="backupJsonBtn">📁 Backup (JSON)</button><button id="restoreBtn">📂 Restore Data</button>
+                        <button id="reportBtn">📊 Professional Report</button><button id="cloudSetupBtn">☁️ Cloud Setup</button>
+                        <button id="saveCloudBtn">💾 Save to Cloud</button><button id="loadCloudBtn">📥 Load from Cloud</button>
+                        <button id="changePasswordBtn">🔒 Change Password</button><button id="allResetBtn">🔄 All Reset (Special)</button>
                         <button id="logoutBtn">🚪 Logout</button>
                     </div>
                 </div>
@@ -471,773 +448,171 @@
         
         <div class="notification" id="notification"></div>
         <input type="file" id="restoreFile" accept=".json" style="display:none;">
-
-        <!-- Search Panel -->
-        <div id="searchPanel" class="floating-panel">
-            <h3>🔎 Search Customer</h3>
-            <div class="inline-flex-group">
-                <div class="flex-grow">
-                    <label>Search By</label>
-                    <select id="searchField">
-                        <option value="name">Name</option>
-                        <option value="phone">Phone Number</option>
-                    </select>
-                </div>
-                <div class="flex-grow">
-                    <label>Value</label>
-                    <input type="text" id="searchValue" placeholder="Enter name or phone" autocomplete="off">
-                </div>
-                <div>
-                    <button id="doSearchBtn">Search</button>
-                    <button id="clearSearchBtn" style="background:#f44336;">Clear</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filter Panel -->
-        <div id="filterPanel" class="floating-panel">
-            <h3>⚙️ Advanced Filter</h3>
-            <div class="inline-flex-group">
-                <div class="flex-grow">
-                    <label>Filter By</label>
-                    <select id="filterTypeSelect">
-                        <option value="pending">Pending Amount</option>
-                        <option value="received">Received Amount</option>
-                        <option value="agent">Agent</option>
-                        <option value="day">Due Day</option>
-                    </select>
-                </div>
-                <div class="flex-grow" id="filterValueContainer">
-                    <label>Value (e.g., >0, =0)</label>
-                    <input type="text" id="filterValueInput" placeholder=">0 , =0 or exact" autocomplete="off">
-                </div>
-                <div>
-                    <button id="doFilterBtn">Apply Filter</button>
-                    <button id="clearFilterBtn" style="background:#f44336;">Clear</button>
-                </div>
-            </div>
-        </div>
+        <div id="searchPanel" class="floating-panel"><h3>🔎 Search Customer</h3><div class="inline-flex-group"><div class="flex-grow"><label>Search By</label><select id="searchField"><option value="name">Name</option><option value="phone">Phone Number</option></select></div><div class="flex-grow"><label>Value</label><input type="text" id="searchValue" placeholder="Enter name or phone" autocomplete="off"></div><div><button id="doSearchBtn">Search</button><button id="clearSearchBtn" style="background:#f44336;">Clear</button></div></div></div>
+        <div id="filterPanel" class="floating-panel"><h3>⚙️ Advanced Filter</h3><div class="inline-flex-group"><div class="flex-grow"><label>Filter By</label><select id="filterTypeSelect"><option value="pending">Pending Amount</option><option value="received">Received Amount</option><option value="agent">Agent</option><option value="day">Due Day</option></select></div><div class="flex-grow" id="filterValueContainer"><label>Value</label><input type="text" id="filterValueInput" placeholder=">0 , =0 or exact"></div><div><button id="doFilterBtn">Apply Filter</button><button id="clearFilterBtn" style="background:#f44336;">Clear</button></div></div></div>
 
         <div class="main-content">
             <div class="left-section">
-                <div class="form-section">
-                    <h2>Add/Edit Customer <span id="editingBadge" style="display:none; background:#00c8ff; padding:2px 12px; border-radius:40px; font-size:0.7rem;">EDIT MODE</span></h2>
-                    <form id="dataForm">
-                        <div class="form-group"><label>Full Name *</label><input type="text" id="name" placeholder="Customer name" required></div>
-                        <div class="form-group"><label>Phone (WhatsApp/SMS)</label><input type="tel" id="phone" placeholder="+923001234567"></div>
-                        <div class="form-group"><label>Monthly Fees</label><input type="number" id="fees" step="0.01" placeholder="Amount" required></div>
-                        <div class="form-group"><label>Received Amount</label><input type="number" id="received" step="0.01" placeholder="Received" value=""></div>
-                        <div class="form-group"><label>Due Day</label><select id="day" required><option value="">Select</option><option>1</option><option>5</option><option>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option>31</option></select></div>
-                        <div class="button-group"><button type="submit" id="addBtn">Add Entry</button><button type="button" id="sendSmsBtn" class="sms-btn">SMS Receipt</button><button type="button" id="sendWhatsAppBtn" class="whatsapp-btn">WhatsApp Receipt</button></div>
-                        <div class="button-group" id="editActionGroup" style="display:none;"><button type="button" id="updateBtn">Update Changes</button><button type="button" id="cancelBtn">Cancel Edit</button></div>
-                    </form>
+                <div class="form-section"><h2>Add/Edit Customer <span id="editingBadge" style="display:none;">EDIT MODE</span></h2>
+                    <form id="dataForm"><div class="form-group"><label>Full Name *</label><input type="text" id="name" required></div><div class="form-group"><label>Phone</label><input type="tel" id="phone"></div><div class="form-group"><label>Monthly Fees</label><input type="number" id="fees" step="0.01" required></div><div class="form-group"><label>Received Amount</label><input type="number" id="received" step="0.01"></div><div class="form-group"><label>Due Day</label><select id="day" required><option value="">Select</option><option>1</option><option>5</option><option>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option>31</option></select></div><div class="button-group"><button type="submit" id="addBtn">Add Entry</button><button type="button" id="sendSmsBtn" class="sms-btn">SMS Receipt</button><button type="button" id="sendWhatsAppBtn" class="whatsapp-btn">WhatsApp Receipt</button></div><div class="button-group" id="editActionGroup" style="display:none;"><button type="button" id="updateBtn">Update Changes</button><button type="button" id="cancelBtn">Cancel Edit</button></div></form>
                 </div>
-                <div class="customer-info-section">
-                    <h2>👤 Customer Details</h2>
-                    <div id="customerDetails" style="padding:18px; background:rgba(0,0,0,0.3); border-radius:24px; min-height:160px;">Click Edit on any customer</div>
-                </div>
-                <div class="stats-section">
-                    <h2>📊 Dashboard</h2>
+                <div class="customer-info-section"><h2>👤 Customer Details</h2><div id="customerDetails" style="padding:18px; background:rgba(0,0,0,0.3); border-radius:24px; min-height:160px;">Click Edit on any customer</div></div>
+                <div class="stats-section"><h2>📊 Dashboard <span id="agentFilterLabel" class="agent-dashboard-head"></span></h2>
                     <div class="stats-grid"><div class="stat-card"><div>Total Customers</div><div class="stat-value" id="totalCustomersCount">0</div></div><div class="stat-card"><div>Pending Cust</div><div class="stat-value pending-value" id="pendingCustomersCount">0</div></div><div class="stat-card"><div>Received Cust</div><div class="stat-value received-value" id="receivedCustomersCount">0</div></div><div class="stat-card"><div>Next Month</div><div class="stat-value" id="nextMonthCustomersCount">0</div></div></div>
                     <div class="stats-grid"><div class="stat-card"><div>Total Fees</div><div class="stat-value" id="totalFeesAmount">0</div></div><div class="stat-card"><div>Pending Fees</div><div class="stat-value pending-value" id="pendingFeesAmount">0</div></div><div class="stat-card"><div>Received Fees</div><div class="stat-value received-value" id="receivedFeesAmount">0</div></div><div class="stat-card"><div>Next Month Fees</div><div class="stat-value" id="nextMonthFeesAmount">0</div></div></div>
                     <div id="syncStatus" class="sync-status">✅ System Ready</div>
                 </div>
             </div>
-            <div class="table-section">
-                <div style="display:flex; justify-content:space-between; flex-wrap:wrap; margin-bottom:15px;">
-                    <h2>Customer Records</h2>
-                    <div id="tableActionButtons" style="display:none; gap:8px;">
-                        <span id="selectionCountText" style="background:#0099cc40; padding:6px 16px; border-radius:30px;">0 selected</span>
-                        <button id="tableDeleteBtn" class="delete-btn">Delete</button>
-                        <button id="tableResetCustomerBtn" class="reset-customer-btn">Reset Payment</button>
-                        <button id="tableNextMonthBtn" class="next-month-mark-btn">Next Month</button>
-                        <button id="tableUnmarkNextMonthBtn" style="background:#ff9800;">Remove Mark</button>
-                    </div>
-                </div>
-                <div class="select-all-wrapper">
-                    <input type="checkbox" id="selectAllCheckbox"> <label>Select All</label>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table id="dataTable">
-                        <thead>
-                            <tr><th></th><th>Day</th><th>Name</th><th>Phone</th><th>Fees</th><th>Received</th><th>Pending</th><th>Receipt No.</th><th>Agent/Date</th><th>Status</th><th>Actions</th>
-                        </thead>
-                        <tbody id="tableBody"></tbody>
-                    </table>
-                </div>
+            <div class="table-section"><div style="display:flex; justify-content:space-between; flex-wrap:wrap;"><h2>Customer Records</h2><div id="tableActionButtons" style="display:none; gap:8px;"><span id="selectionCountText">0 selected</span><button id="tableDeleteBtn" class="delete-btn">Delete</button><button id="tableResetCustomerBtn" class="reset-customer-btn">Reset Payment</button><button id="tableNextMonthBtn">Next Month</button><button id="tableUnmarkNextMonthBtn" style="background:#ff9800;">Remove Mark</button></div></div>
+                <div class="select-all-wrapper"><input type="checkbox" id="selectAllCheckbox"> <label>Select All</label></div>
+                <div style="overflow-x:auto;"><table id="dataTable"><thead><tr><th></th><th>Day</th><th>Name</th><th>Phone</th><th>Fees</th><th>Received</th><th>Pending</th><th>Receipt No.</th><th>Agent/Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="tableBody"></tbody></table></div>
             </div>
         </div>
     </div>
 
-    <!-- Cloud Setup Modal -->
     <div class="modal" id="sheetModal" style="display:none;">
-        <div class="modal-content" style="max-width:550px;">
-            <h2>☁️ Cloud Setup (Google Sheets)</h2>
-            <p style="margin-bottom:15px;">Paste your Google Apps Script Web App URL below. Auto-sync works automatically.</p>
-            <div class="form-group"><label>Web App URL</label><input type="text" id="sheetWebAppUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
-            <button id="saveSheetSettings">Save & Test Connection</button>
-            <button id="closeSheetModal" style="background:#666; margin-top:10px;">Close</button>
-            <hr style="margin:15px 0;">
-            <details>
-                <summary>📘 Step-by-Step: Google Sheets Setup (Copy/Follow)</summary>
-                <div style="background:#1e2a2f; padding:12px; border-radius:12px; font-size:12px; margin-top:8px;">
-                    <b>1.</b> Create new Google Sheet → Extensions → Apps Script.<br>
-                    <b>2.</b> Delete default code and paste the code given below.<br>
-                    <b>3.</b> Click Deploy → New Deployment → Web app → Execute as "Me", access "Anyone".<br>
-                    <b>4.</b> Copy the generated URL and paste in above field & Save.<br>
-                    <b>5.</b> <span style="color:#8effa0;">DEFAULT URL already pre-filled for testing (you can replace).</span><br>
-                    <pre style="background:#00000060; padding:8px; border-radius:8px; overflow-x:auto; font-size:10px;">
-function doPost(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const data = JSON.parse(e.postData.contents);
-  if(sheet.getLastRow() === 0) sheet.appendRow(["Serial","Name","Phone","Fees","Received","Pending","Day","Token","Agent","Status","LastUpdated"]);
-  data.forEach(c => sheet.appendRow([c.serial,c.name,c.phone,c.fees,c.received,c.pending,c.day,c.token,c.receivedBy,c.isNextMonthPending?"Next Month":"Current",c.lastUpdated]));
-  return ContentService.createTextOutput(JSON.stringify({status:"success"}));
-}
-function doGet() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const lastRow = sheet.getLastRow();
-  if(lastRow <= 1) return ContentService.createTextOutput(JSON.stringify({status:"empty",data:[]}));
-  const values = sheet.getRange(2,1,lastRow-1,11).getValues();
-  const customers = values.map(row => ({serial:row[0],name:row[1],phone:row[2],fees:row[3],received:row[4],pending:row[5],day:row[6],token:row[7],receivedBy:row[8],isNextMonthPending:row[9]==="Next Month",lastUpdated:row[10]}));
-  const unique = [];
-  const seen = new Set();
-  for(let i=customers.length-1;i>=0;i--) if(!seen.has(customers[i].serial)) { seen.add(customers[i].serial); unique.unshift(customers[i]); }
-  return ContentService.createTextOutput(JSON.stringify({status:"success",data:unique}));
-}
-                    </pre>
-                </div>
-            </details>
-        </div>
-    </div>
-
-    <div class="modal" id="passwordModal" style="display:none;">
         <div class="modal-content">
-            <h2>Change Password</h2>
-            <div class="form-group"><label>Current Password</label><input type="password" id="currentPassword"></div>
-            <div class="form-group"><label>New Password</label><input type="password" id="newPassword"></div>
-            <div class="form-group"><label>Confirm Password</label><input type="password" id="confirmPassword"></div>
-            <button id="savePasswordBtn">Save</button>
-            <button id="cancelPasswordBtn">Cancel</button>
+            <h2>☁️ Cloud Setup</h2>
+            <p style="margin-bottom:10px; font-size:0.8rem;">Google Sheets Web App URL</p>
+            <input type="text" id="sheetWebAppUrl" placeholder="https://script.google.com/macros/s/.../exec">
+            <div class="button-group-small" style="margin-top:15px; display:flex; gap:10px;">
+                <button id="saveSheetSettings">Save URL</button>
+                <button id="resetSheetUrlBtn" style="background:#ff9800;">Reset to Default</button>
+                <button id="closeSheetModal" style="background:#666;">Close</button>
+            </div>
         </div>
     </div>
+    <div class="modal" id="passwordModal" style="display:none;"><div class="modal-content"><h2>Change Password</h2><div class="form-group"><label>Current Password</label><input type="password" id="currentPassword"></div><div class="form-group"><label>New Password</label><input type="password" id="newPassword"></div><div class="form-group"><label>Confirm Password</label><input type="password" id="confirmPassword"></div><button id="savePasswordBtn">Save</button><button id="cancelPasswordBtn">Cancel</button></div></div>
 
     <script>
-        // ================== CONFIGURATION ==================
         const DEFAULT_GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbw-h3XPXITCOPDrNuM5-pIfUYOB5OaxnmdCfF04jChY51lUxpwQ8Cb8h6EVcPdCc8Yt/exec";
         let data = [], editingIndex = -1, selectedRowsSet = new Set(), currentUser = null;
         let activeSearch = { field: "", value: "" };
         let activeFilter = { type: "", value: "" };
         let googleSheetUrl = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
         const STORAGE_KEY = "usFiberNetFinalV3", USERS_KEY = "usFiberNetUsersFinalV3";
-
         let users = [
             { username: "admin", password: "admin123", role: "admin" },
             { username: "umair", password: "admin123", role: "agent" },
             { username: "saqib", password: "admin123", role: "agent" }
         ];
-
         function saveUsers() { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
         function loadUsers() { const saved = localStorage.getItem(USERS_KEY); if(saved) users = JSON.parse(saved); else saveUsers(); }
-
-        function showNotification(msg, isError = false) {
-            const n = document.getElementById('notification');
-            n.textContent = msg;
-            n.classList.add('show');
-            if(isError) n.classList.add('error');
-            else n.classList.remove('error');
-            setTimeout(() => n.classList.remove('show'), 3500);
-        }
-
+        function showNotification(msg, isError = false) { const n = document.getElementById('notification'); n.textContent = msg; n.classList.add('show'); if(isError) n.classList.add('error'); else n.classList.remove('error'); setTimeout(() => n.classList.remove('show'), 3500); }
         function generateReceiptNumber() { return "USF-" + new Date().getFullYear() + String(Math.floor(Math.random() * 9999)).padStart(4,'0'); }
         function formatAmount(amt) { return Number(amt).toFixed(2); }
-        function getCurrentFormattedDate() { 
-            const now = new Date();
-            return now.toLocaleDateString('en-PK', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        }
-
-        // ENHANCED: rich receipt message with customer name, date, receipt#, paid, pending, and thank you
-        function generateRichReceiptMessage(customer) {
-            const receiptNo = customer.token || generateReceiptNumber();
-            if(!customer.token) customer.token = receiptNo;
-            const paidAmount = formatAmount(customer.received);
-            const pendingAmount = formatAmount(customer.pending);
-            const currentDate = getCurrentFormattedDate();
-            return `🏢 *US Fiber Net* 🏢\n━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* ${customer.name}\n📅 *Date:* ${currentDate}\n🧾 *Receipt No:* ${receiptNo}\n💵 *Paid:* PKR ${paidAmount}\n⏳ *Pending:* PKR ${pendingAmount}\n━━━━━━━━━━━━━━━━━━━\n✅ Thank you for choosing US Fiber Net! 🙏`;
-        }
-
-        async function autoSyncToGoogleSheet() {
-            const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
-            if(!url || url === "" || data.length === 0) return;
-            try {
-                await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-                document.getElementById('syncStatus').innerHTML = '✅ Auto-synced ' + new Date().toLocaleTimeString();
-                document.getElementById('syncStatus').className = 'sync-status success';
-            } catch(e) { console.warn("Auto sync issue", e); }
-        }
-
-        async function manualSaveToCloud() {
-            const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
-            if(!url) { showNotification("Cloud URL not set! Setup first.", true); return; }
-            showNotification("Saving to cloud...");
-            try {
-                await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-                showNotification("Data saved to cloud successfully!");
-            } catch(e) { showNotification("Cloud save error", true); }
-        }
-
-        async function manualLoadFromCloud() {
-            const url = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL;
-            if(!url) { showNotification("Cloud URL missing", true); return; }
-            showNotification("Loading from cloud...");
-            try {
-                const resp = await fetch(url);
-                const result = await resp.json();
-                if(result.status === "success" && result.data && result.data.length) {
-                    data = result.data;
-                    data.forEach(c => { 
-                        if(c.isNextMonthPending === undefined) c.isNextMonthPending = false; 
-                        if(!c.token) c.token = ""; 
-                        if(!c.receivedBy) c.receivedBy = ""; 
-                        if(c.pending === undefined) c.pending = (c.fees||0) - (c.received||0); 
-                    });
-                    saveToLocalStorage();
-                    refreshTable();
-                    showNotification("Loaded " + data.length + " customers from cloud.");
-                } else { showNotification("Cloud empty or not reachable", true); }
-            } catch(e) { showNotification("Cloud load error", true); }
-        }
-
+        function getCurrentFormattedDateTime() { return new Date().toLocaleString('en-PK', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }); }
+        function generateRichReceiptMessage(customer) { const receiptNo = customer.token || generateReceiptNumber(); if(!customer.token) customer.token = receiptNo; return `🏢 US Fiber Net 🏢\n━━━━━━━━━━━━━━━━\n👤 ${customer.name}\n📅 ${getCurrentFormattedDateTime()}\n🧾 ${receiptNo}\n💵 Paid: PKR ${formatAmount(customer.received)}\n⏳ Pending: PKR ${formatAmount(customer.pending)}\n✅ Thank you!`; }
+        async function autoSyncToGoogleSheet() { if(!googleSheetUrl || data.length===0) return; try { await fetch(googleSheetUrl, { method:'POST', mode:'no-cors', body:JSON.stringify(data) }); document.getElementById('syncStatus').innerHTML='✅ Auto-synced'; } catch(e){} }
         function saveToLocalStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); autoSyncToGoogleSheet(); }
-
-        function allResetSpecial() { 
-            if(confirm("⚠️ ALL RESET SPECIAL:\n- All customers: Pending amount = FULL MONTHLY FEES\n- All received amounts become ZERO\n- Receipts cleared\n- Next Month customers become CURRENT\nProceed?")) { 
-                data.forEach(c => { 
-                    c.pending = c.fees;
-                    c.received = 0; 
-                    c.token = ""; 
-                    c.receivedBy = ""; 
-                    c.lastUpdated = ""; 
-                    c.isNextMonthPending = false; 
-                }); 
-                saveToLocalStorage(); 
-                refreshTable(); 
-                showNotification("Special reset completed: All pending = full fees amount"); 
-            } 
-        }
 
         function refreshTable() {
             let filtered = [...data];
-            if(activeSearch.field && activeSearch.value.trim()) {
-                const val = activeSearch.value.toLowerCase().trim();
-                filtered = filtered.filter(c => activeSearch.field === "name" ? c.name.toLowerCase().includes(val) : (c.phone||"").toLowerCase().includes(val));
-            }
-            if(activeFilter.type && activeFilter.value && activeFilter.value.trim()) {
-                const val = activeFilter.value.trim();
-                filtered = filtered.filter(c => {
-                    if(activeFilter.type === 'pending') { 
-                        if(val === ">0") return c.pending > 0; 
-                        if(val === "=0") return c.pending === 0; 
-                        return c.pending == parseFloat(val); 
-                    }
-                    if(activeFilter.type === 'received') { 
-                        if(val === ">0") return c.received > 0; 
-                        if(val === "=0") return c.received === 0; 
-                        return c.received == parseFloat(val); 
-                    }
-                    if(activeFilter.type === 'agent') return (c.receivedBy || "") === val;
-                    if(activeFilter.type === 'day') return c.day == val;
-                    return true;
-                });
-            }
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = "";
-            if(filtered.length === 0) {
-                const row = tbody.insertRow();
-                const cell = row.insertCell(0);
-                cell.colSpan = 11;
-                cell.innerHTML = '📭 No records found';
-                cell.style.textAlign = 'center';
-                cell.style.padding = '40px';
-                updateDashboard();
-                updateSelectedStats();
-                return;
-            }
-            filtered.forEach(entry => {
-                const row = tbody.insertRow();
-                const chkCell = row.insertCell(0);
-                const cb = document.createElement('input'); 
-                cb.type='checkbox'; 
-                cb.className='row-selector'; 
-                cb.dataset.serial=entry.serial;
-                cb.checked = selectedRowsSet.has(entry.serial);
-                cb.addEventListener('change', () => { 
-                    if(cb.checked) selectedRowsSet.add(entry.serial); 
-                    else selectedRowsSet.delete(entry.serial); 
-                    updateSelectedStats(); 
-                });
-                chkCell.appendChild(cb);
-                row.insertCell(1).innerText = entry.day;
-                row.insertCell(2).innerText = entry.name;
-                row.insertCell(3).innerText = entry.phone || 'N/A';
-                row.insertCell(4).innerText = formatAmount(entry.fees);
-                row.insertCell(5).innerText = formatAmount(entry.received);
-                row.insertCell(6).innerHTML = `<span style="color:${entry.pending > 0 ? '#ffaa77' : '#8effa0'}">${formatAmount(entry.pending)}</span>`;
-                row.insertCell(7).innerHTML = entry.token || '<span style="opacity:0.6;">—</span>';
-                const agentInfo = entry.receivedBy ? `${entry.receivedBy}<br/><small>${entry.lastUpdated?.split(',')[0] || ''}</small>` : '—';
-                row.insertCell(8).innerHTML = `<small>${agentInfo}</small>`;
-                row.insertCell(9).innerHTML = entry.isNextMonthPending ? '<span class="badge-next">Next Month</span>' : '<span>Current</span>';
-                const actionCell = row.insertCell(10);
-                const editBtn = document.createElement('button'); 
-                editBtn.innerText='Edit'; 
-                editBtn.className='edit-btn'; 
-                editBtn.style.padding='5px 12px';
-                editBtn.onclick = () => {
-                    const idx = data.findIndex(d => d.serial === entry.serial);
-                    if(idx !== -1) {
-                        const eData = data[idx];
-                        document.getElementById('name').value = eData.name;
-                        document.getElementById('phone').value = eData.phone || '';
-                        document.getElementById('fees').value = eData.fees;
-                        document.getElementById('received').value = eData.received === 0 ? '' : eData.received;
-                        document.getElementById('day').value = eData.day;
-                        editingIndex = idx;
-                        document.getElementById('addBtn').style.display = 'none';
-                        document.getElementById('editActionGroup').style.display = 'flex';
-                        document.getElementById('editingBadge').style.display = 'inline-block';
-                        document.getElementById('customerDetails').innerHTML = `<div><strong>${eData.name}</strong><br/>📞 ${eData.phone || 'N/A'}<br/>💰 Fees: ${formatAmount(eData.fees)}<br/>💵 Received: ${formatAmount(eData.received)}<br/>📌 Pending: ${formatAmount(eData.pending)}<br/>📅 Due Day: ${eData.day}</div>`;
-                        document.getElementById('received').focus();
-                    }
-                };
-                actionCell.appendChild(editBtn);
-            });
-            updateDashboard();
+            if(activeSearch.field && activeSearch.value.trim()) { const val=activeSearch.value.toLowerCase().trim(); filtered=filtered.filter(c=>activeSearch.field==="name"?c.name.toLowerCase().includes(val):(c.phone||"").toLowerCase().includes(val)); }
+            if(activeFilter.type && activeFilter.value.trim()) { const val=activeFilter.value.trim(); filtered=filtered.filter(c=>{ if(activeFilter.type==='pending'){ if(val===">0")return c.pending>0; if(val==="=0")return c.pending===0; return c.pending==parseFloat(val); } if(activeFilter.type==='received'){ if(val===">0")return c.received>0; if(val==="=0")return c.received===0; return c.received==parseFloat(val); } if(activeFilter.type==='agent')return (c.receivedBy||"")===val; if(activeFilter.type==='day')return c.day==val; return true; }); }
+            const tbody=document.getElementById('tableBody'); tbody.innerHTML="";
+            if(filtered.length===0){ const row=tbody.insertRow(); row.insertCell(0).colSpan=11; row.cells[0].innerHTML='📭 No records'; return; }
+            filtered.forEach(entry=>{ const row=tbody.insertRow(); const chkCell=row.insertCell(0); const cb=document.createElement('input'); cb.type='checkbox'; cb.className='row-selector'; cb.dataset.serial=entry.serial; cb.checked=selectedRowsSet.has(entry.serial); cb.addEventListener('change',()=>{ if(cb.checked)selectedRowsSet.add(entry.serial); else selectedRowsSet.delete(entry.serial); updateSelectedStats(); }); chkCell.appendChild(cb);
+            row.insertCell(1).innerText=entry.day; row.insertCell(2).innerText=entry.name; row.insertCell(3).innerText=entry.phone||'N/A'; row.insertCell(4).innerText=formatAmount(entry.fees); row.insertCell(5).innerText=formatAmount(entry.received); row.insertCell(6).innerHTML=`<span style="color:${entry.pending>0?'#ffaa77':'#8effa0'}">${formatAmount(entry.pending)}</span>`;
+            row.insertCell(7).innerHTML=entry.token||'—'; const agentInfo = entry.receivedBy ? `${entry.receivedBy}<br/><small>${entry.lastUpdated?.split(',')[0]||''}</small>` : '—'; row.insertCell(8).innerHTML=`<small>${agentInfo}</small>`;
+            row.insertCell(9).innerHTML=entry.isNextMonthPending?'<span class="badge-next">Next Month</span>':'<span>Current</span>';
+            const actionCell=row.insertCell(10); const editBtn=document.createElement('button'); editBtn.innerText='Edit'; editBtn.className='edit-btn'; editBtn.style.padding='5px 12px'; editBtn.onclick=()=>{ const idx=data.findIndex(d=>d.serial===entry.serial); if(idx!==-1){ const eData=data[idx]; document.getElementById('name').value=eData.name; document.getElementById('phone').value=eData.phone||''; document.getElementById('fees').value=eData.fees; document.getElementById('received').value=eData.received===0?'':eData.received; document.getElementById('day').value=eData.day; editingIndex=idx; document.getElementById('addBtn').style.display='none'; document.getElementById('editActionGroup').style.display='flex'; document.getElementById('editingBadge').style.display='inline-block'; document.getElementById('customerDetails').innerHTML=`<div><strong>${eData.name}</strong><br/>📞 ${eData.phone||'N/A'}<br/>💰 Fees: ${formatAmount(eData.fees)}<br/>💵 Received: ${formatAmount(eData.received)}<br/>📌 Pending: ${formatAmount(eData.pending)}<br/>📅 Due Day: ${eData.day}<br/>🧾 Receipt: ${eData.token||'Not issued'}<br/>👤 Agent: ${eData.receivedBy||'None'}</div>`; document.getElementById('received').focus(); } }; actionCell.appendChild(editBtn); });
+            updateDashboardWithAgentContext();
             updateSelectedStats();
         }
 
-        function updateDashboard() {
-            const all = data;
-            document.getElementById('totalCustomersCount').innerText = all.length;
-            document.getElementById('pendingCustomersCount').innerText = all.filter(c => c.pending > 0 && !c.isNextMonthPending).length;
-            document.getElementById('receivedCustomersCount').innerText = all.filter(c => c.received > 0 && !c.isNextMonthPending).length;
-            document.getElementById('nextMonthCustomersCount').innerText = all.filter(c => c.isNextMonthPending).length;
-            document.getElementById('totalFeesAmount').innerText = formatAmount(all.reduce((s,c)=>s+(c.fees||0),0));
-            const totalPendingAll = all.filter(c => !c.isNextMonthPending).reduce((s,c)=>s+(c.pending||0),0);
-            document.getElementById('pendingFeesAmount').innerText = formatAmount(totalPendingAll);
-            document.getElementById('receivedFeesAmount').innerText = formatAmount(all.filter(c=>!c.isNextMonthPending).reduce((s,c)=>s+(c.received||0),0));
-            document.getElementById('nextMonthFeesAmount').innerText = formatAmount(all.filter(c=>c.isNextMonthPending).reduce((s,c)=>s+(c.fees||0),0));
+        function updateDashboardWithAgentContext() {
+            let targetData = data;
+            let filterAgentName = (activeFilter.type === 'agent' && activeFilter.value) ? activeFilter.value : null;
+            if(filterAgentName) targetData = targetData.filter(c => (c.receivedBy || "") === filterAgentName);
+            const totalCust = targetData.length;
+            const pendingCust = targetData.filter(c => c.pending > 0 && !c.isNextMonthPending).length;
+            const receivedCust = targetData.filter(c => c.received > 0 && !c.isNextMonthPending).length;
+            const nextMonthCust = targetData.filter(c => c.isNextMonthPending).length;
+            const totalFees = targetData.reduce((s,c)=>s+(c.fees||0),0);
+            const pendingFees = targetData.filter(c=>!c.isNextMonthPending).reduce((s,c)=>s+(c.pending||0),0);
+            const receivedFees = targetData.filter(c=>!c.isNextMonthPending).reduce((s,c)=>s+(c.received||0),0);
+            const nextMonthFees = targetData.filter(c=>c.isNextMonthPending).reduce((s,c)=>s+(c.fees||0),0);
+            document.getElementById('totalCustomersCount').innerText = totalCust;
+            document.getElementById('pendingCustomersCount').innerText = pendingCust;
+            document.getElementById('receivedCustomersCount').innerText = receivedCust;
+            document.getElementById('nextMonthCustomersCount').innerText = nextMonthCust;
+            document.getElementById('totalFeesAmount').innerText = formatAmount(totalFees);
+            document.getElementById('pendingFeesAmount').innerText = formatAmount(pendingFees);
+            document.getElementById('receivedFeesAmount').innerText = formatAmount(receivedFees);
+            document.getElementById('nextMonthFeesAmount').innerText = formatAmount(nextMonthFees);
+            const agentLabelSpan = document.getElementById('agentFilterLabel');
+            if(filterAgentName) agentLabelSpan.innerText = `⚡ Filtered by Agent: ${filterAgentName}`;
+            else agentLabelSpan.innerText = '';
         }
 
-        function updateSelectedStats() {
-            const countElem = document.getElementById('selectionCountText');
-            if(countElem) countElem.innerText = selectedRowsSet.size + ' selected';
-            const actionDiv = document.getElementById('tableActionButtons');
-            if(actionDiv) actionDiv.style.display = selectedRowsSet.size > 0 ? "flex" : "none";
-            const selectAll = document.getElementById('selectAllCheckbox');
-            if(selectAll) selectAll.checked = (selectedRowsSet.size === data.length && data.length>0);
-        }
+        function updateSelectedStats() { document.getElementById('selectionCountText').innerText = selectedRowsSet.size + ' selected'; const actionDiv = document.getElementById('tableActionButtons'); if(actionDiv) actionDiv.style.display = selectedRowsSet.size > 0 ? "flex" : "none"; const selectAll = document.getElementById('selectAllCheckbox'); if(selectAll) selectAll.checked = (selectedRowsSet.size === data.length && data.length>0); }
 
-        function addNewEntry() {
-            const name = document.getElementById('name').value.trim();
-            if(!name) return showNotification("Name required", true);
-            const phone = document.getElementById('phone').value;
-            const fees = parseFloat(document.getElementById('fees').value) || 0;
-            let receivedVal = document.getElementById('received').value;
-            const received = receivedVal === '' ? 0 : parseFloat(receivedVal) || 0;
-            const day = document.getElementById('day').value;
-            if(!day) return showNotification("Select due day", true);
-            const pending = fees - received;
-            const newSerial = data.length ? Math.max(...data.map(d=>d.serial)) + 1 : 1;
-            data.push({ 
-                serial: newSerial, name, phone, fees, received, pending, day, 
-                token: received>0 ? generateReceiptNumber() : "", 
-                isNextMonthPending: false, 
-                receivedBy: currentUser?.username || "system", 
-                lastUpdated: new Date().toLocaleString() 
-            });
-            saveToLocalStorage();
-            refreshTable();
-            document.getElementById('dataForm').reset();
-            document.getElementById('received').value = '';
-            showNotification("Customer added & synced to cloud");
-        }
-
-        function updateEntryFromEdit() {
-            if(editingIndex === -1) return;
-            const name = document.getElementById('name').value.trim();
-            const phone = document.getElementById('phone').value;
-            const fees = parseFloat(document.getElementById('fees').value) || 0;
-            let receivedVal = document.getElementById('received').value;
-            const received = receivedVal === '' ? 0 : parseFloat(receivedVal) || 0;
-            const day = document.getElementById('day').value;
-            if(!name || !day) return;
-            const pending = fees - received;
-            data[editingIndex] = { 
-                ...data[editingIndex], 
-                name, phone, fees, received, pending, day, 
-                lastUpdated: new Date().toLocaleString(), 
-                receivedBy: currentUser?.username,
-                token: (received>0 && !data[editingIndex].token) ? generateReceiptNumber() : data[editingIndex].token
-            };
-            saveToLocalStorage();
-            cancelEditMode();
-            refreshTable();
-            showNotification("Updated & synced");
-        }
+        function addNewEntry() { const name = document.getElementById('name').value.trim(); if(!name) return showNotification("Name required",true); const phone = document.getElementById('phone').value; const fees = parseFloat(document.getElementById('fees').value)||0; let receivedVal = document.getElementById('received').value; const received = receivedVal===''?0:parseFloat(receivedVal)||0; const day = document.getElementById('day').value; if(!day) return showNotification("Due day required",true); const pending = fees - received; const newSerial = data.length ? Math.max(...data.map(d=>d.serial))+1:1; data.push({ serial:newSerial, name, phone, fees, received, pending, day, token: received>0?generateReceiptNumber():"", isNextMonthPending:false, receivedBy:currentUser?.username||"system", lastUpdated:getCurrentFormattedDateTime() }); saveToLocalStorage(); refreshTable(); document.getElementById('dataForm').reset(); document.getElementById('received').value=''; showNotification("Customer added"); }
+        function updateEntryFromEdit(){ if(editingIndex===-1) return; const name=document.getElementById('name').value.trim(); const phone=document.getElementById('phone').value; const fees=parseFloat(document.getElementById('fees').value)||0; let receivedVal=document.getElementById('received').value; const received=receivedVal===''?0:parseFloat(receivedVal)||0; const day=document.getElementById('day').value; if(!name||!day) return; const pending=fees-received; data[editingIndex]={...data[editingIndex], name, phone, fees, received, pending, day, lastUpdated:getCurrentFormattedDateTime(), receivedBy:currentUser?.username, token:(received>0 && !data[editingIndex].token)?generateReceiptNumber():data[editingIndex].token}; saveToLocalStorage(); cancelEditMode(); refreshTable(); showNotification("Updated"); }
+        function cancelEditMode(){ editingIndex=-1; document.getElementById('addBtn').style.display='block'; document.getElementById('editActionGroup').style.display='none'; document.getElementById('editingBadge').style.display='none'; document.getElementById('dataForm').reset(); document.getElementById('received').value=''; document.getElementById('customerDetails').innerHTML='<p>Click Edit on any customer</p>'; refreshTable(); }
+        function deleteSelectedRows(){ if(selectedRowsSet.size===0) return; if(confirm(`Delete ${selectedRowsSet.size} customers?`)){ data=data.filter(d=>!selectedRowsSet.has(d.serial)); selectedRowsSet.clear(); saveToLocalStorage(); refreshTable(); showNotification("Deleted"); } }
+        function markSelectedAsNextMonth(){ selectedRowsSet.forEach(s=>{ const idx=data.findIndex(d=>d.serial===s); if(idx!==-1) data[idx].isNextMonthPending=true; }); selectedRowsSet.clear(); saveToLocalStorage(); refreshTable(); showNotification("Marked Next Month"); }
+        function unmarkSelectedFromNextMonth(){ selectedRowsSet.forEach(s=>{ const idx=data.findIndex(d=>d.serial===s); if(idx!==-1) data[idx].isNextMonthPending=false; }); selectedRowsSet.clear(); saveToLocalStorage(); refreshTable(); showNotification("Unmarked"); }
+        function resetCustomerSelected(){ if(confirm("Reset payment for selected customers?")){ selectedRowsSet.forEach(s=>{ const idx=data.findIndex(d=>d.serial===s); if(idx!==-1){ data[idx].received=0; data[idx].pending=data[idx].fees; data[idx].token=""; data[idx].receivedBy=""; data[idx].lastUpdated=""; } }); saveToLocalStorage(); refreshTable(); selectedRowsSet.clear(); showNotification("Reset done"); } }
+        function generateReceiptForCurrentEdit(){ if(editingIndex===-1) { showNotification("Edit a customer first",true); return null; } const cust=data[editingIndex]; if(!cust.token && cust.received>0) cust.token=generateReceiptNumber(); else if(!cust.token) cust.token=generateReceiptNumber(); saveToLocalStorage(); refreshTable(); return cust; }
+        function handleSMS(){ const cust=generateReceiptForCurrentEdit(); if(cust && cust.phone){ window.location.href=`sms:${cust.phone}?body=${encodeURIComponent(generateRichReceiptMessage(cust))}`; showNotification("SMS ready"); } else showNotification("Phone missing",true); }
+        function handleWhatsApp(){ const cust=generateReceiptForCurrentEdit(); if(cust && cust.phone){ const phoneRaw=cust.phone.replace(/[^0-9+]/g,'').replace(/^\+/,''); window.open(`https://wa.me/${phoneRaw}?text=${encodeURIComponent(generateRichReceiptMessage(cust))}`,'_blank'); showNotification("WhatsApp opened"); } else showNotification("Phone missing",true); }
+        function backupJSON(){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify({data,users},null,2)],{type:"application/json"})); a.download=`USFiber_${new Date().toISOString().slice(0,19)}.json`; a.click(); }
+        function restoreData(file){ const reader=new FileReader(); reader.onload=e=>{ try{ const j=JSON.parse(e.target.result); if(j.data){ data=j.data; data.forEach(c=>{ if(c.isNextMonthPending===undefined)c.isNextMonthPending=false; if(!c.token)c.token=""; if(!c.receivedBy)c.receivedBy=""; if(c.pending===undefined)c.pending=c.fees-c.received; }); saveToLocalStorage(); refreshTable(); showNotification("Restored"); } }catch(err){ showNotification("Invalid file",true); } }; reader.readAsText(file); }
         
-        function cancelEditMode() { 
-            editingIndex = -1; 
-            document.getElementById('addBtn').style.display = 'block'; 
-            document.getElementById('editActionGroup').style.display = 'none'; 
-            document.getElementById('editingBadge').style.display = 'none'; 
-            document.getElementById('dataForm').reset(); 
-            document.getElementById('received').value = ''; 
-            document.getElementById('customerDetails').innerHTML = '<p>Click Edit on any customer</p>'; 
-            refreshTable(); 
-        }
-        
-        function deleteSelectedRows() { 
-            if(selectedRowsSet.size === 0) return; 
-            if(confirm(`Delete ${selectedRowsSet.size} customers?`)) { 
-                data = data.filter(d => !selectedRowsSet.has(d.serial)); 
-                selectedRowsSet.clear(); 
-                saveToLocalStorage(); 
-                refreshTable(); 
-                showNotification("Deleted & cloud updated"); 
-            } 
-        }
-        
-        function markSelectedAsNextMonth() { 
-            selectedRowsSet.forEach(s => { 
-                const idx = data.findIndex(d=>d.serial===s); 
-                if(idx !== -1) data[idx].isNextMonthPending = true; 
-            }); 
-            selectedRowsSet.clear(); 
-            saveToLocalStorage(); 
-            refreshTable(); 
-            showNotification("Marked Next Month"); 
-        }
-        
-        function unmarkSelectedFromNextMonth() { 
-            selectedRowsSet.forEach(s => { 
-                const idx = data.findIndex(d=>d.serial===s); 
-                if(idx !== -1) data[idx].isNextMonthPending = false; 
-            }); 
-            selectedRowsSet.clear(); 
-            saveToLocalStorage(); 
-            refreshTable(); 
-            showNotification("Unmarked"); 
-        }
-        
-        function resetCustomerSelected() { 
-            if(confirm("Reset payment for selected customers?\n(This will set Received = 0 and Pending = Full Fees)")) { 
-                selectedRowsSet.forEach(s => { 
-                    const idx = data.findIndex(d=>d.serial===s); 
-                    if(idx !== -1) { 
-                        data[idx].received = 0; 
-                        data[idx].pending = data[idx].fees; 
-                        data[idx].token = ""; 
-                        data[idx].receivedBy = ""; 
-                        data[idx].lastUpdated = ""; 
-                    } 
-                }); 
-                saveToLocalStorage(); 
-                refreshTable(); 
-                selectedRowsSet.clear(); 
-                showNotification("Reset completed: Pending = Full Fees"); 
-            } 
-        }
-
-        function generateReceiptForCurrentEdit() { 
-            if(editingIndex === -1) { 
-                showNotification("Please edit a customer first to generate receipt", true); 
-                return null; 
-            } 
-            const cust = data[editingIndex]; 
-            if(!cust.token && cust.received > 0) cust.token = generateReceiptNumber();
-            else if(!cust.token) cust.token = generateReceiptNumber();
-            saveToLocalStorage(); 
-            refreshTable(); 
-            return cust; 
-        }
-        
-        function handleSMS() { 
-            const cust = generateReceiptForCurrentEdit(); 
-            if(cust && cust.phone) { 
-                const message = generateRichReceiptMessage(cust);
-                window.location.href = `sms:${cust.phone}?body=${encodeURIComponent(message)}`; 
-                showNotification("SMS receipt prepared with full details"); 
-            } else showNotification("Phone missing or select/edit a customer", true); 
-        }
-        
-        function handleWhatsApp() { 
-            const cust = generateReceiptForCurrentEdit(); 
-            if(cust && cust.phone) { 
-                const message = generateRichReceiptMessage(cust);
-                const phoneRaw = cust.phone.replace(/[^0-9+]/g, '').replace(/^\+/, ''); 
-                window.open(`https://wa.me/${phoneRaw}?text=${encodeURIComponent(message)}`, '_blank'); 
-                showNotification("WhatsApp receipt opened with full details"); 
-            } else showNotification("Phone missing or select/edit a customer", true); 
-        }
-        
-        function backupJSON() { 
-            const backup = { data, users, backupDate: new Date().toISOString() }; 
-            const a = document.createElement('a'); 
-            a.href = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" })); 
-            a.download = `USFiber_Backup_${new Date().toISOString().slice(0,19)}.json`; 
-            a.click(); 
-            showNotification("Backup saved"); 
-        }
-        
-        function restoreData(file) { 
-            const reader = new FileReader(); 
-            reader.onload = e => { 
-                try { 
-                    const j = JSON.parse(e.target.result); 
-                    if(j.data) { 
-                        data = j.data; 
-                        data.forEach(c => { 
-                            if(c.isNextMonthPending === undefined) c.isNextMonthPending = false; 
-                            if(!c.token) c.token = ""; 
-                            if(!c.receivedBy) c.receivedBy = ""; 
-                            if(c.pending === undefined) c.pending = (c.fees||0) - (c.received||0); 
-                        }); 
-                        saveToLocalStorage(); 
-                        refreshTable(); 
-                        showNotification("Restored & cloud synced"); 
-                    } 
-                } catch(err) { showNotification("Invalid file", true); } 
-            }; 
-            reader.readAsText(file); 
-        }
-        
-        function professionalReport() { 
-            let htmlContent = `<!DOCTYPE html>
-            <html>
-            <head><meta charset="UTF-8"><title>US Fiber Net - Monthly Report</title>
-            <style>
-                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; background: #f5f5f5; }
-                .report-container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
-                h1 { color: #0a2f44; border-left: 5px solid #0099cc; padding-left: 20px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th { background: #0a2f44; color: white; padding: 12px; text-align: left; }
-                td { padding: 10px; border-bottom: 1px solid #ddd; }
-                .total-row { background: #e0f2fe; font-weight: bold; }
-            </style>
-            </head>
-            <body>
-                <div class="report-container">
-                    <h1>📊 US Fiber Net - Monthly Financial Report</h1>
-                    <p>Generated: ${new Date().toLocaleString()} | Total Customers: ${data.length}</p>
-                    <table>
-                        <thead><tr><th>Name</th><th>Phone</th><th>Fees</th><th>Received</th><th>Pending</th><th>Due Day</th><th>Status</th></tr></thead>
-                        <tbody>${data.map(c => `<tr>
-                            <td>${c.name}</td>
-                            <td>${c.phone || '-'}</td>
-                            <td>$${formatAmount(c.fees)}</td>
-                            <td>$${formatAmount(c.received)}</td>
-                            <td style="color:${c.pending>0?'#e53935':'#2e7d32'}">$${formatAmount(c.pending)}</td>
-                            <td>${c.day}</td>
-                            <td>${c.isNextMonthPending ? 'Next Month' : 'Current'}</td>
-                            </tr>`).join('')}</tbody>
-                        <tfoot><tr class="total-row"><td colspan="2"><strong>TOTAL</strong></td><td><strong>$${formatAmount(data.reduce((s,c)=>s+(c.fees||0),0))}</strong></td><td><strong>$${formatAmount(data.reduce((s,c)=>s+(c.received||0),0))}</strong></td><td><strong>$${formatAmount(data.reduce((s,c)=>s+(c.pending||0),0))}</strong></td><td colspan="2"></td></tr></tfoot>
-                    </table>
-                </div>
-            </body>
-            </html>`;
-            const win = window.open(); 
-            win.document.write(htmlContent); 
-            win.document.close(); 
-        }
-        
-        function loadFromLocalStorage() { 
-            const saved = localStorage.getItem(STORAGE_KEY); 
-            if(saved) { 
-                data = JSON.parse(saved); 
-                data.forEach(c => { 
-                    if(c.isNextMonthPending===undefined) c.isNextMonthPending=false; 
-                    if(!c.token) c.token=""; 
-                    if(!c.receivedBy) c.receivedBy=""; 
-                    if(c.pending===undefined) c.pending=c.fees-c.received; 
-                }); 
-                refreshTable(); 
-            } else data = []; 
-        }
-
-        // ========== EVENT LISTENERS ==========
-        document.getElementById('dataForm').addEventListener('submit', (e) => { e.preventDefault(); editingIndex === -1 ? addNewEntry() : updateEntryFromEdit(); });
-        document.getElementById('updateBtn').onclick = updateEntryFromEdit; 
-        document.getElementById('cancelBtn').onclick = cancelEditMode;
-        document.getElementById('sendSmsBtn').onclick = handleSMS; 
-        document.getElementById('sendWhatsAppBtn').onclick = handleWhatsApp;
-        document.getElementById('tableDeleteBtn').onclick = deleteSelectedRows; 
-        document.getElementById('tableResetCustomerBtn').onclick = resetCustomerSelected;
-        document.getElementById('tableNextMonthBtn').onclick = markSelectedAsNextMonth; 
-        document.getElementById('tableUnmarkNextMonthBtn').onclick = unmarkSelectedFromNextMonth;
-        document.getElementById('selectAllCheckbox').addEventListener('change', (e) => { 
-            document.querySelectorAll('.row-selector').forEach(cb => { 
-                cb.checked = e.target.checked; 
-                const s = parseInt(cb.dataset.serial); 
-                if(e.target.checked) selectedRowsSet.add(s); 
-                else selectedRowsSet.delete(s); 
-            }); 
-            updateSelectedStats(); 
-        });
-        document.getElementById('backupJsonBtn').onclick = backupJSON; 
-        document.getElementById('restoreBtn').onclick = () => document.getElementById('restoreFile').click();
-        document.getElementById('restoreFile').onchange = e => { if(e.target.files.length) restoreData(e.target.files[0]); };
-        document.getElementById('reportBtn').onclick = professionalReport; 
-        document.getElementById('allResetBtn').onclick = allResetSpecial;
-        document.getElementById('saveCloudBtn').onclick = manualSaveToCloud; 
-        document.getElementById('loadCloudBtn').onclick = manualLoadFromCloud;
-        document.getElementById('cloudSetupBtn').onclick = () => { 
-            document.getElementById('sheetWebAppUrl').value = localStorage.getItem("googleSheetUrl") || DEFAULT_GOOGLE_SHEET_URL; 
-            document.getElementById('sheetModal').style.display='flex'; 
-            document.getElementById('dropdownMenu').classList.remove('show');
-        };
-        document.getElementById('saveSheetSettings').onclick = () => { 
-            const url = document.getElementById('sheetWebAppUrl').value; 
-            if(url) localStorage.setItem("googleSheetUrl", url); 
-            showNotification("Cloud URL saved"); 
-            document.getElementById('sheetModal').style.display='none'; 
-        };
-        document.getElementById('closeSheetModal').onclick = () => document.getElementById('sheetModal').style.display='none';
-        
-        document.getElementById('doSearchBtn').onclick = () => { 
-            activeSearch.field = document.getElementById('searchField').value; 
-            activeSearch.value = document.getElementById('searchValue').value; 
-            refreshTable(); 
-        };
-        document.getElementById('clearSearchBtn').onclick = () => { 
-            activeSearch = { field: "", value: "" }; 
-            document.getElementById('searchValue').value = ""; 
-            refreshTable(); 
-            showNotification("Search cleared");
-        };
-        document.getElementById('searchValue').addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doSearchBtn').click(); });
-        
-        document.getElementById('doFilterBtn').onclick = () => { 
-            let filterVal = document.getElementById('filterValueInput').value;
-            if(document.getElementById('filterValueInput').tagName === 'SELECT') filterVal = document.getElementById('filterValueInput').value;
-            activeFilter.type = document.getElementById('filterTypeSelect').value; 
-            activeFilter.value = filterVal; 
-            refreshTable(); 
-        };
-        document.getElementById('clearFilterBtn').onclick = () => { 
-            activeFilter = { type: "", value: "" }; 
-            document.getElementById('filterValueInput').value = ""; 
-            refreshTable(); 
-            showNotification("Filter cleared");
-        };
-        
-        function updateFilterUI() {
-            const filterType = document.getElementById('filterTypeSelect').value;
-            const container = document.getElementById('filterValueContainer');
-            if(filterType === 'agent') {
-                const defaultAgents = ['admin', 'umair', 'saqib'];
-                const agentsFromData = [...new Set(data.map(c => c.receivedBy).filter(a => a && a.trim()))];
-                const allAgents = [...new Set([...defaultAgents, ...agentsFromData])];
-                container.innerHTML = `<label>Select Agent</label><select id="filterValueInput"><option value="">All Agents</option>${allAgents.map(a => `<option value="${a}">${a}</option>`).join('')}</select>`;
-            } else if(filterType === 'day') {
-                container.innerHTML = `<label>Select Due Day</label><select id="filterValueInput"><option value="">All Days</option>${[1,5,10,15,20,25,30,31].map(d => `<option value="${d}">${d}</option>`).join('')}</select>`;
-            } else {
-                container.innerHTML = `<label>Value (e.g., >0, =0, or exact amount)</label><input type="text" id="filterValueInput" placeholder=">0, =0, or number" autocomplete="off">`;
+        function professionalReport() {
+            let htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>US Fiber Net - Professional Report</title><style>body{font-family:Segoe UI,sans-serif;padding:30px;background:#f5f5f5}.report-container{max-width:1300px;margin:0 auto;background:white;border-radius:15px;padding:30px;box-shadow:0 5px 20px rgba(0,0,0,0.1)}h1{color:#0a2f44;border-left:5px solid #0099cc;padding-left:20px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#0a2f44;color:white;padding:12px}td{padding:10px;border-bottom:1px solid #ddd}.total-row{background:#e0f2fe;font-weight:bold}</style></head><body><div class="report-container"><h1>📊 US Fiber Net - Complete Agent Report</h1><p>Generated: ${new Date().toLocaleString()} | Total Customers: ${data.length}</p><h3>📋 Customer Records with Receipt & Agent Details</h3><table><thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Fees</th><th>Received</th><th>Pending</th><th>Receipt No.</th><th>Agent</th><th>Date/Time</th><th>Status</th></tr></thead><tbody>${data.map((c,idx)=>`<tr><td>${idx+1}</td><td>${c.name}</td><td>${c.phone||'-'}</td><td>${formatAmount(c.fees)}</td><td>${formatAmount(c.received)}</td><td style="color:${c.pending>0?'#e53935':'#2e7d32'}">${formatAmount(c.pending)}</td><td>${c.token||'-'}</td><td>${c.receivedBy||'-'}</td><td>${c.lastUpdated||'-'}</td><td>${c.isNextMonthPending?'Next Month':'Current'}</td></tr>`).join('')}</tbody><tfoot><tr class="total-row"><td colspan="3"><strong>GRAND TOTAL</strong></td><td><strong>${formatAmount(data.reduce((s,c)=>s+c.fees,0))}</strong></td><td><strong>${formatAmount(data.reduce((s,c)=>s+c.received,0))}</strong></td><td><strong>${formatAmount(data.reduce((s,c)=>s+c.pending,0))}</strong></td><td colspan="4"></td></tr></tfoot>}</table>`;
+            const agentMap = new Map();
+            data.forEach(c => { if(c.receivedBy) { if(!agentMap.has(c.receivedBy)) agentMap.set(c.receivedBy, []); agentMap.get(c.receivedBy).push(c); } });
+            let agentSummary = `<h2 style="margin-top:30px;">📊 Agent-wise Summary</h2>`;
+            for(let [agent, customers] of agentMap.entries()) {
+                const totalF = customers.reduce((s,c)=>s+(c.fees||0),0);
+                const totalR = customers.reduce((s,c)=>s+(c.received||0),0);
+                const totalP = customers.reduce((s,c)=>s+(c.pending||0),0);
+                agentSummary += `<div style="margin-top:20px; background:#eef2ff; padding:15px; border-radius:20px;"><h3>👤 Agent: ${agent}</h3><p>Customers: ${customers.length} | Total Fees: ${formatAmount(totalF)} | Received: ${formatAmount(totalR)} | Pending: ${formatAmount(totalP)}</p></div>`;
             }
-            const newInput = document.getElementById('filterValueInput');
-            if(newInput && newInput.tagName === 'INPUT') newInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doFilterBtn').click(); });
+            htmlContent += agentSummary + `</div></body></html>`;
+            const win=window.open(); win.document.write(htmlContent); win.document.close();
         }
-        document.getElementById('filterTypeSelect').addEventListener('change', () => updateFilterUI());
+
+        function loadFromLocalStorage(){ const saved=localStorage.getItem(STORAGE_KEY); if(saved){ data=JSON.parse(saved); data.forEach(c=>{ if(c.isNextMonthPending===undefined)c.isNextMonthPending=false; if(!c.token)c.token=""; if(!c.receivedBy)c.receivedBy=""; if(c.pending===undefined)c.pending=c.fees-c.received; }); refreshTable(); } else data=[]; }
+
+        // ENTER key handlers
+        document.getElementById('searchValue').addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doSearchBtn').click(); });
+        document.getElementById('filterValueInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doFilterBtn').click(); });
         
-        document.getElementById('changePasswordBtn').onclick = () => document.getElementById('passwordModal').style.display='flex';
-        document.getElementById('savePasswordBtn').onclick = () => { 
-            const curr = document.getElementById('currentPassword').value; 
-            const newp = document.getElementById('newPassword').value; 
-            const conf = document.getElementById('confirmPassword').value; 
-            if(curr !== currentUser.password) { showNotification("Wrong current password", true); return; } 
-            if(newp !== conf) { showNotification("Passwords do not match", true); return; } 
-            if(newp.length < 4) { showNotification("Password must be at least 4 characters", true); return; }
-            currentUser.password = newp; 
-            const idx = users.findIndex(u=>u.username===currentUser.username); 
-            if(idx!==-1) users[idx].password = newp; 
-            saveUsers(); 
-            document.getElementById('passwordModal').style.display='none'; 
-            showNotification("Password changed successfully"); 
-        };
-        document.getElementById('cancelPasswordBtn').onclick = () => document.getElementById('passwordModal').style.display='none';
-        
-        document.getElementById('logoutBtn').onclick = () => { 
-            sessionStorage.clear(); 
-            currentUser = null; 
-            document.getElementById('loginScreen').style.display='flex'; 
-            document.getElementById('mainContainer').style.display='none'; 
-            cancelEditMode(); 
-        };
-        
-        document.getElementById('searchPanelBtn').onclick = () => { 
-            document.getElementById('searchPanel').classList.toggle('active'); 
-            document.getElementById('filterPanel').classList.remove('active'); 
-            document.getElementById('dropdownMenu').classList.remove('show');
-        };
-        document.getElementById('filterPanelBtn').onclick = () => { 
-            document.getElementById('filterPanel').classList.toggle('active'); 
-            document.getElementById('searchPanel').classList.remove('active'); 
-            document.getElementById('dropdownMenu').classList.remove('show');
-            setTimeout(() => updateFilterUI(), 50);
-        };
-        
-        const menuBtn = document.getElementById('menuBtn');
-        const dropdownMenuEl = document.getElementById('dropdownMenu');
-        menuBtn.onclick = (e) => { 
-            e.stopPropagation(); 
-            dropdownMenuEl.classList.toggle('show');
-        };
-        document.addEventListener('click', function(event) {
-            if (!menuBtn.contains(event.target) && !dropdownMenuEl.contains(event.target)) dropdownMenuEl.classList.remove('show');
-        });
-        
-        function resetDefaultPassword() {
-            const adminUser = users.find(u => u.username === 'admin');
-            if(adminUser) adminUser.password = 'admin123';
-            const umairUser = users.find(u => u.username === 'umair');
-            if(umairUser) umairUser.password = 'admin123';
-            const saqibUser = users.find(u => u.username === 'saqib');
-            if(saqibUser) saqibUser.password = 'admin123';
-            saveUsers();
-            showNotification("All default passwords reset to 'admin123'");
-        }
-        document.getElementById('resetPasswordLoginBtn').onclick = () => { resetDefaultPassword(); document.getElementById('loginMessage').style.display = 'none'; showNotification("Passwords reset to admin123 for all users"); };
-        
-        function handleLogin() { 
-            const username = document.getElementById('loginUsername').value.trim(); 
-            const pwd = document.getElementById('loginPassword').value; 
-            const user = users.find(u => u.username === username && u.password === pwd); 
-            if(user) { 
-                currentUser = { ...user }; 
-                sessionStorage.setItem('loggedUser', JSON.stringify(currentUser)); 
-                document.getElementById('loginScreen').style.display='none'; 
-                document.getElementById('mainContainer').style.display='block'; 
-                document.getElementById('userInfoDisplay').innerHTML = `${username} (${user.role === 'admin' ? 'Admin' : 'Agent'})`; 
-                loadFromLocalStorage(); 
-                setTimeout(() => manualLoadFromCloud(), 500); 
-                showNotification(`Welcome ${username}!`); 
-            } else { 
-                document.getElementById('loginMessage').style.display='block'; 
-                setTimeout(() => document.getElementById('loginMessage').style.display='none', 2000);
-            } 
-        }
-        document.getElementById('loginBtn').onclick = handleLogin; 
-        document.getElementById('loginPassword').addEventListener('keypress', e => { if(e.key === 'Enter') handleLogin(); });
-        
-        loadUsers(); 
-        const logged = sessionStorage.getItem('loggedUser'); 
-        if(logged) { 
-            currentUser = JSON.parse(logged); 
-            document.getElementById('loginScreen').style.display='none'; 
-            document.getElementById('mainContainer').style.display='block'; 
-            document.getElementById('userInfoDisplay').innerHTML = `${currentUser.username} (${currentUser.role === 'admin' ? 'Admin' : 'Agent'})`; 
-            loadFromLocalStorage(); 
-            setTimeout(() => manualLoadFromCloud(), 500);
-        }
+        document.getElementById('dataForm').addEventListener('submit',(e)=>{ e.preventDefault(); editingIndex===-1?addNewEntry():updateEntryFromEdit(); });
+        document.getElementById('updateBtn').onclick=updateEntryFromEdit; document.getElementById('cancelBtn').onclick=cancelEditMode;
+        document.getElementById('sendSmsBtn').onclick=handleSMS; document.getElementById('sendWhatsAppBtn').onclick=handleWhatsApp;
+        document.getElementById('tableDeleteBtn').onclick=deleteSelectedRows; document.getElementById('tableResetCustomerBtn').onclick=resetCustomerSelected;
+        document.getElementById('tableNextMonthBtn').onclick=markSelectedAsNextMonth; document.getElementById('tableUnmarkNextMonthBtn').onclick=unmarkSelectedFromNextMonth;
+        document.getElementById('selectAllCheckbox').addEventListener('change',(e)=>{ document.querySelectorAll('.row-selector').forEach(cb=>{ cb.checked=e.target.checked; const s=parseInt(cb.dataset.serial); e.target.checked?selectedRowsSet.add(s):selectedRowsSet.delete(s); }); updateSelectedStats(); });
+        document.getElementById('backupJsonBtn').onclick=backupJSON; document.getElementById('restoreBtn').onclick=()=>document.getElementById('restoreFile').click(); document.getElementById('restoreFile').onchange=e=>{ if(e.target.files.length) restoreData(e.target.files[0]); };
+        document.getElementById('reportBtn').onclick=professionalReport; document.getElementById('allResetBtn').onclick=()=>{ if(confirm("ALL RESET: pending = full fees, received zero?")){ data.forEach(c=>{ c.pending=c.fees; c.received=0; c.token=""; c.receivedBy=""; c.lastUpdated=""; c.isNextMonthPending=false; }); saveToLocalStorage(); refreshTable(); showNotification("Reset complete"); } };
+        document.getElementById('saveCloudBtn').onclick=async()=>{ if(!googleSheetUrl){ showNotification("Cloud URL missing",true); return; } await fetch(googleSheetUrl,{method:'POST',mode:'no-cors',body:JSON.stringify(data)}); showNotification("Saved to cloud"); };
+        document.getElementById('loadCloudBtn').onclick=async()=>{ if(!googleSheetUrl){ showNotification("Cloud URL missing",true); return; } try{ const resp=await fetch(googleSheetUrl); const res=await resp.json(); if(res.status==="success" && res.data){ data=res.data; data.forEach(c=>{ if(c.isNextMonthPending===undefined)c.isNextMonthPending=false; if(!c.token)c.token=""; if(!c.receivedBy)c.receivedBy=""; if(c.pending===undefined)c.pending=c.fees-c.received; }); saveToLocalStorage(); refreshTable(); showNotification("Cloud loaded"); } }catch(e){ showNotification("Cloud error",true); } };
+        document.getElementById('cloudSetupBtn').onclick=()=>{ document.getElementById('sheetWebAppUrl').value=googleSheetUrl; document.getElementById('sheetModal').style.display='flex'; };
+        document.getElementById('saveSheetSettings').onclick=()=>{ const url=document.getElementById('sheetWebAppUrl').value; if(url) { googleSheetUrl=url; localStorage.setItem("googleSheetUrl",url); showNotification("Cloud URL saved"); } document.getElementById('sheetModal').style.display='none'; };
+        document.getElementById('resetSheetUrlBtn').onclick=()=>{ googleSheetUrl = DEFAULT_GOOGLE_SHEET_URL; localStorage.setItem("googleSheetUrl", DEFAULT_GOOGLE_SHEET_URL); document.getElementById('sheetWebAppUrl').value = DEFAULT_GOOGLE_SHEET_URL; showNotification("Reset to default URL"); };
+        document.getElementById('closeSheetModal').onclick=()=>document.getElementById('sheetModal').style.display='none';
+        document.getElementById('doSearchBtn').onclick=()=>{ activeSearch.field=document.getElementById('searchField').value; activeSearch.value=document.getElementById('searchValue').value; refreshTable(); };
+        document.getElementById('clearSearchBtn').onclick=()=>{ activeSearch={field:"",value:""}; document.getElementById('searchValue').value=""; refreshTable(); };
+        document.getElementById('doFilterBtn').onclick=()=>{ let filterVal=document.getElementById('filterValueInput').value; if(document.getElementById('filterValueInput').tagName==='SELECT') filterVal=document.getElementById('filterValueInput').value; activeFilter.type=document.getElementById('filterTypeSelect').value; activeFilter.value=filterVal; refreshTable(); };
+        document.getElementById('clearFilterBtn').onclick=()=>{ activeFilter={type:"",value:""}; document.getElementById('filterValueInput').value=""; refreshTable(); };
+        function updateFilterUI(){ const type=document.getElementById('filterTypeSelect').value; const container=document.getElementById('filterValueContainer'); if(type==='agent'){ const agentList = ['admin','umair','saqib']; container.innerHTML=`<label>Select Agent</label><select id="filterValueInput"><option value="">All Agents</option>${agentList.map(a=>`<option value="${a}">${a}</option>`).join('')}</select>`; const newSelect = document.getElementById('filterValueInput'); if(newSelect) newSelect.addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doFilterBtn').click(); }); } else if(type==='day'){ container.innerHTML=`<label>Due Day</label><select id="filterValueInput"><option value="">All Days</option>${[1,5,10,15,20,25,30,31].map(d=>`<option value="${d}">${d}</option>`).join('')}</select>`; const newSelect = document.getElementById('filterValueInput'); if(newSelect) newSelect.addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doFilterBtn').click(); }); } else { container.innerHTML=`<label>Value (eg >0, =0)</label><input type="text" id="filterValueInput" placeholder=">0, =0">`; const newInput = document.getElementById('filterValueInput'); if(newInput) newInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('doFilterBtn').click(); }); } }
+        document.getElementById('filterTypeSelect').addEventListener('change',updateFilterUI);
+        document.getElementById('changePasswordBtn').onclick=()=>document.getElementById('passwordModal').style.display='flex';
+        document.getElementById('savePasswordBtn').onclick=()=>{ const curr=document.getElementById('currentPassword').value; const newp=document.getElementById('newPassword').value; const conf=document.getElementById('confirmPassword').value; if(curr!==currentUser.password) showNotification("Wrong password",true); else if(newp!==conf) showNotification("Passwords mismatch",true); else if(newp.length<4) showNotification("Min 4 chars",true); else { currentUser.password=newp; const idx=users.findIndex(u=>u.username===currentUser.username); if(idx!==-1) users[idx].password=newp; saveUsers(); document.getElementById('passwordModal').style.display='none'; showNotification("Password changed"); } };
+        document.getElementById('cancelPasswordBtn').onclick=()=>document.getElementById('passwordModal').style.display='none';
+        document.getElementById('logoutBtn').onclick=()=>{ sessionStorage.clear(); currentUser=null; document.getElementById('loginScreen').style.display='flex'; document.getElementById('mainContainer').style.display='none'; };
+        document.getElementById('searchPanelBtn').onclick=()=>{ document.getElementById('searchPanel').classList.toggle('active'); document.getElementById('filterPanel').classList.remove('active'); };
+        document.getElementById('filterPanelBtn').onclick=()=>{ document.getElementById('filterPanel').classList.toggle('active'); document.getElementById('searchPanel').classList.remove('active'); setTimeout(updateFilterUI,50); };
+        const menuBtn=document.getElementById('menuBtn'), dropdown=document.getElementById('dropdownMenu'); menuBtn.onclick=e=>{ e.stopPropagation(); dropdown.classList.toggle('show'); }; document.addEventListener('click',()=>dropdown.classList.remove('show'));
+        document.getElementById('resetPasswordLoginBtn').onclick=()=>{ users.forEach(u=>u.password='admin123'); saveUsers(); showNotification("All passwords reset to admin123"); };
+        function handleLogin(){ const user=users.find(u=>u.username===document.getElementById('loginUsername').value.trim() && u.password===document.getElementById('loginPassword').value); if(user){ currentUser={...user}; sessionStorage.setItem('loggedUser',JSON.stringify(currentUser)); document.getElementById('loginScreen').style.display='none'; document.getElementById('mainContainer').style.display='block'; document.getElementById('userInfoDisplay').innerHTML=`${user.username} (${user.role})`; loadFromLocalStorage(); } else document.getElementById('loginMessage').style.display='block'; }
+        document.getElementById('loginBtn').onclick=handleLogin; document.getElementById('loginPassword').addEventListener('keypress',e=>{if(e.key==='Enter')handleLogin();});
+        loadUsers(); const logged=sessionStorage.getItem('loggedUser'); if(logged){ currentUser=JSON.parse(logged); document.getElementById('loginScreen').style.display='none'; document.getElementById('mainContainer').style.display='block'; document.getElementById('userInfoDisplay').innerHTML=`${currentUser.username} (${currentUser.role})`; loadFromLocalStorage(); }
         updateFilterUI();
     </script>
 </body>
